@@ -40,7 +40,7 @@ class Bar(elements.pyElement):
 # Create an Element
 #######################################################################
 
-nelems = 10
+nelems = 100
 length = 1.0
 dx     = length/nelems
 
@@ -117,7 +117,7 @@ tacs = creator.createTACS()
 # Integrator
 ######################################################################
 
-bdf = TACS.BDFIntegrator(tacs, 0.0, 1.0, 1000, 2)
+bdf = TACS.BDFIntegrator(tacs, 0.0, 1.0, 100, 2)
 bdf.integrate()
 bdf.writeRawSolution('bar.dat', 0)
 
@@ -125,8 +125,8 @@ bdf.writeRawSolution('bar.dat', 0)
 t, q, qdot, qddot = bdf.getStates(bdf.getNumTimeSteps())
 
 # Compute the natural frequencies
-num_freqs = 5
-freq = bdf.lapackNaturalFrequencies(q, qdot, qddot, write_modes=0, gyroscopic=0)
+num_freqs = 10
+freq = bdf.lapackNaturalFrequencies(q, qdot, qddot, write_modes=0, use_gyroscopic=0)
 freq = np.sort(freq[freq != 0])[0:num_freqs]
 
 print "frequencies", freq
