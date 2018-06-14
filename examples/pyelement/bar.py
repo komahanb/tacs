@@ -80,7 +80,7 @@ for i in xrange(nelems):
 ##           2, 3,
 ##           3, 4]
 ## ptr    = [0, 2, 4, 6, 8]
-
+    
 bcs    = [0]
 bcptr  = None
 bcvars = None
