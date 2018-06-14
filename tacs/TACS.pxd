@@ -549,8 +549,8 @@ cdef extern from "TACSIntegrator.h":
         void setFunctions(TACSFunction **funcs, int num_funcs,
                           int num_design_vars,
                           int start_step, int end_step)
-        void lapackNaturalFrequencies(int, TACSBVec*, TACSBVec*,
-                                      TACSBVec*, TacsScalar*, TacsScalar*)
+        void lapackNaturalFrequencies(int, int, TACSBVec*, TACSBVec*,
+                                      TACSBVec*, TacsScalar*)
         
         # Forward mode functions
         int iterate(int step_num,TACSBVec *forces)

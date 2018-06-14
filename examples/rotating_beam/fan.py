@@ -16,7 +16,6 @@ plt.rcParams.update(params)
     
 plt.rcParams['text.latex.preamble'] = [r'\usepackage{sfmath}']
 plt.rcParams['font.family'] = 'sans-serif'
-# plt.rcParams['font.sans-serif'] = 'courier'
 plt.rcParams['font.size'] = 12
 plt.rcParams['font.weight'] = 'bold'
 plt.rcParams['lines.linewidth'] = 4
@@ -43,15 +42,38 @@ for i in range(len(tableau20)):
 
 # Define colors for flap, torsion and leadlag
 flap_color =  tableau20[2]
+flap_color2=  tableau20[2+1]
 lead_lag_color =  tableau20[0]
+lead_lag_color2 =  tableau20[0+1]
 torsion_color =  tableau20[4]
+torsion_color2 =  tableau20[4+1]
 
 # Data
-num_freqs = 12
+num_freqs = 10
 Omegas = [0.1, 0.2, 0.3, 0.4,
           0.5, 0.6, 0.7, 0.8,
           0.9, 1.0, 1.1, 1.2]
 ydata = np.zeros((num_freqs,len(Omegas)))
+ddata = np.zeros((num_freqs,len(Omegas)))
+
+# Load the dymore data
+inpFile = open("dymore_freq.dat", "r")
+dymore_freqdata = list(inpFile.readlines())
+inpFile.close()
+
+# Make array for plotting
+freqindex = 0
+for k in xrange(num_freqs):    
+    freq = []
+    for i in xrange(len(Omegas)):
+        line = dymore_freqdata[k + 1]
+        entry = line.split()
+        freq.append(float(entry[i]))
+        
+    # Add frequencies to array
+    print freq
+    ddata[k,:] = freq
+    freqindex += 1
 
 # Read the data file
 inpFile = open("freqdata.dat", "r")
@@ -83,28 +105,42 @@ ax.spines['right'].set_visible(True)
 ax.spines['top'].set_visible(True)
 ax.xaxis.set_ticks_position('bottom')
 ax.yaxis.set_ticks_position('left')
-plt.axis([0.085, 1.21, 0, 16])
+plt.axis([0.085, 1.21, 0, 16.5])
 xlabel = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2]
 ylabel = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
 plt.xticks(xlabel)
 plt.yticks(ylabel)
 plt.xlabel('$\Omega/\Omega_{ref}$')
 plt.ylabel('$\omega/\Omega_{ref}$')
-    
+
+# TACS data
 for k in flap_modes:
-    plt.plot(Omegas, ydata[k,:], '-s' , mew=mew, ms=markerSize, color=flap_color, mec='black')
+    plt.plot(Omegas, ydata[k,:], '-o' , mew=mew, ms=markerSize, color=flap_color, mec='black')
 
 for k in lead_lag_modes:
-    plt.plot(Omegas, ydata[k,:], '-s' , mew=mew, ms=markerSize, color=lead_lag_color, mec='black')
+    print Omegas, ydata[k,:]
+    plt.plot(Omegas, ydata[k,:], '-o' , mew=mew, ms=markerSize, color=lead_lag_color, mec='black')
 
 for k in torsion_modes:
-    plt.plot(Omegas, ydata[k,:], '-s', mew=mew, ms=markerSize, color=torsion_color, mec='black')
+    plt.plot(Omegas, ydata[k,:], '-o', mew=mew, ms=markerSize, color=torsion_color, mec='black')
+
+# Dymore data
+for k in flap_modes:
+    plt.plot(Omegas, ddata[k,:], '-s' , mew=mew, ms=markerSize, color=flap_color, mec='black',alpha=0.5)
+
+for k in lead_lag_modes:
+    plt.plot(Omegas, ddata[k,:], '-s' , mew=mew, ms=markerSize, color=lead_lag_color, mec='black',alpha=0.5)
+
+for k in torsion_modes:
+    plt.plot(Omegas, ddata[k,:], '-s', mew=mew, ms=markerSize, color=torsion_color, mec='black',alpha=0.5)
        
 lines = ax.get_lines()
-legend = plt.legend([lines[0], lines[9], lines[5]],
-                     ["flap", "lag", "torsion"],
+legend = plt.legend([lines[0], lines[9], lines[5],
+                     lines[10+0], lines[10+9], lines[10+5]],
+                     ["TACS flap", "TACS lag", "TACS torsion",
+                      "DYMORE flap", "DYMORE lag", "DYMORE  torsion",],
                      loc='upper left',
-                     ncol=3,
-                     framealpha=0.5)
+                     ncol=2,
+                     framealpha=0.0)
 ax.add_artist(legend)
 plt.savefig('fan.pdf', bbox_inches='tight', pad_inches=0.05)
