@@ -40,19 +40,47 @@ class Bar(elements.pyElement):
 # Create an Element
 #######################################################################
 
+nelems = 10
+length = 1.0
+dx     = length/nelems
+
 num_disps = 1
 num_nodes = 2
 bar       = Bar(num_nodes, num_disps)
 
 #######################################################################
-# Create TACS using the element
+# Create TACS using the elements
 #######################################################################
 
-elems  = [bar]
-xpts   = [0.0, 0.0, 0.0,
-          2.0, 0.0, 0.0]
-conn   = [0, 1]
-ptr    = [0, 2]
+elems = []
+for i in xrange(nelems):
+    elems.append(bar)    
+
+xpts = []
+for i in xrange(nelems+1):
+    x = [dx*i, 0.0, 0.0]
+    xpts.extend(x)
+
+ptr = [0]
+for i in xrange(nelems):
+    ptr.extend([max(ptr)+num_nodes])
+
+conn = []
+for i in xrange(nelems):
+    conn.extend([i+0, i+1])
+    
+## elems  = [bar, bar, bar, bar]
+## xpts   = [0.00 , 0.0, 0.0,
+##           0.25 , 0.0, 0.0,
+##           0.50 , 0.0, 0.0,
+##           0.75 , 0.0, 0.0,
+##           1.00 , 0.0, 0.0]
+## conn   = [0, 1,
+##           1, 2,
+##           2, 3,
+##           3, 4]
+## ptr    = [0, 2, 4, 6, 8]
+
 bcs    = [0]
 bcptr  = None
 bcvars = None
@@ -89,6 +117,6 @@ tacs = creator.createTACS()
 # Integrator
 ######################################################################
 
-bdf = TACS.BDFIntegrator(tacs, 0.0, 0.1, 1000, 2)
+bdf = TACS.BDFIntegrator(tacs, 0.0, 1.0, 1000, 2)
 bdf.integrate()
 bdf.writeRawSolution('bar.dat', 0)
