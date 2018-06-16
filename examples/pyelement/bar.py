@@ -9,12 +9,14 @@ class Bar(elements.pyElement):
     """
     def __init__(self, num_disp, num_nodes):
         super(Bar, self).__init__(num_disp, num_nodes)
-        self.E = 70.0e6
+        self.E   = 70.0e6
         self.rho = 2700.0
+        self.k   = np.asmatrix(np.array([[1,-1], [-1,1]]))
+        self.m   = np.asmatrix(np.array([[2, 1], [1, 2]]))
         return
     
     def getInitConditions(self, u, udot, uddot, xpts):
-        u[0] = 0.1
+        u[0]    = 0.1
         udot[0] = 0.0
         return
 
@@ -22,18 +24,25 @@ class Bar(elements.pyElement):
         l = xpts[3] - xpts[0]
         mscale = self.rho*l/6.0
         kscale = self.E/l
-        res[0] += mscale*(2.0*uddot[0] + 1.0*uddot[1]) + kscale*( 1.0*u[0]-1.0*u[1])
-        res[1] += mscale*(1.0*uddot[0] + 2.0*uddot[1]) + kscale*(-1.0*u[0]+1.0*u[1])
+
+        # make matrices for easy multiplication
+        q = np.asmatrix(u).transpose()
+        qdot = np.asmatrix(udot).transpose()
+        qddot = np.asmatrix(uddot).transpose()
+
+        # Compute residual
+        r = np.matmul(kscale*self.k, q) + np.matmul(mscale*self.m, qddot)
+
+        # Add the residual 
+        res += r.A1
+        
         return    
 
     def addJacobian(self, time, J, alpha, beta, gamma, xpts, u, udot, uddot):
         l = xpts[3] - xpts[0]
         mscale = self.rho*l/6.0
         kscale = self.E/l
-        J[0,0] += alpha*kscale*1.0 + gamma*mscale*2.0
-        J[0,1] += alpha*kscale*-1.0 + gamma*mscale*1.0
-        J[1,0] += alpha*kscale*-1.0 + gamma*mscale*1.0
-        J[1,1] += alpha*kscale*1.0 + gamma*mscale*2.0
+        J += alpha*kscale*self.k + gamma*mscale*self.m
         return
 
 #######################################################################
