@@ -19,7 +19,7 @@ class Beam(elements.pyElement):
         self.Iz = 8.33333333333333e-7 # m^4
         self.J = 3.12e-8 #m^4
 
-        print " Why no shearing?"
+        #print " Why no shearing?".  Will be there if we use Timoshenko's constitutive relations
         print " Why Ip and J for polar moment?"
         
         return 
@@ -85,68 +85,68 @@ class Beam(elements.pyElement):
     def getStiffnessMatrix(self, L, E, A, G, J, Iy, Iz):        
         K = np.zeros([12,12])
 
-        # Axial
+        # Axial u1
         K[0,0]   = E*A/L
         K[0,6]   = -E*A/L
 
-        # Lead lag
+        # Lead lag v1
         K[1,1]   = 12*E*Iy/(L**3)
-        K[1,5]   = 6*E*Iy/(L**2)
+        K[1,4]   = 6*E*Iy/(L**2)
         K[1,7]   = -12*E*Iy/(L**3)
-        K[1,11]  = 6*E*Iy/(L**2)
+        K[1,10]  = 6*E*Iy/(L**2)
 
-        # Flap
+        # Flap w1
         K[2,2]   = 12*E*Iz/(L**3)
-        K[2,4]   = -6*E*Iz/(L**2)
+        K[2,5]   = 6*E*Iz/(L**2)
         K[2,8]   = -12*E*Iz/(L**3)
-        K[2,10]  = -6*E*Iz/(L**2)
+        K[2,11]  = 6*E*Iz/(L**2)
 
-        # Torsion
+        # Torsion phi1
         K[3,3]   = G*J/L
         K[3,9]   = -G*J/L
 
-        # Lead lag Bending
-        K[4,2]   = -6*E*Iy/(L**2)
+        # Lead lag Bending psi1
+        K[4,1]   = 6*E*Iy/(L**2)
         K[4,4]   = 4*E*Iy/L
-        K[4,8]   = 6*E*Iy/(L**2)
+        K[4,7]   = -6*E*Iy/(L**2)
         K[4,10]  = 2*E*Iy/L
 
-        # Flap Bending
-        K[5,1]   = 6*E*Iz/(L**2)
+        # Flap Bending theta1
+        K[5,2]   = 6*E*Iz/(L**2)
         K[5,5]   = 4*E*Iz/L
-        K[5,7]   = -6*E*Iz/(L**2)
+        K[5,8]   = -6*E*Iz/(L**2)
         K[5,11]  = 2*E*Iz/L
 
-        # Axial
+        # Axial u2
         K[6,0]   = -E*A/L
         K[6,6]   = E*A/L
 
-        # Lead Lag
+        # Lead Lag v2
         K[7,1]   = -12*E*Iy/(L**3)
-        K[7,5]   = -6*E*Iz/(L**2)
-        K[7,7]   = 12*E*Iz/(L**3)
-        K[7,11]  = -6*E*Iz/(L**2)
+        K[7,4]   = -6*E*Iy/(L**2)
+        K[7,7]   = 12*E*Iy/(L**3)
+        K[7,10]  = -6*E*Iy/(L**2)
 
-        # Flap
+        # Flap w2
         K[8,2]   = -12*E*Iz/(L**3)
-        K[8,4]   = 6*E*Iz/(L**2)
+        K[8,5]   = -6*E*Iz/(L**2)
         K[8,8]   = 12*E*Iz/(L**3)
-        K[8,10]  = 6*E*Iz/(L**2)
+        K[8,11]  = -6*E*Iz/(L**2)
 
-        # Torsion
+        # Torsion phi2
         K[9,3]   = -G*J/L
         K[9,9]   = G*J/L
 
-        # Lead Lag Bending Moment
-        K[10,2]  = -6*E*Iy/(L**2)
+        # Lead Lag Bending Moment psi2
+        K[10,1]  = 6*E*Iy/(L**2)
         K[10,4]  = 2*E*Iy/L
-        K[10,8]  = 6*E*Iy/(L**2)
+        K[10,7]  = -6*E*Iy/(L**2)
         K[10,10] = 4*E*Iy/L
 
-        # Flap Bending Moment
-        K[11,1]  = 6*E*Iz/(L**2)
+        # Flap Bending Moment theta2
+        K[11,2]  = 6*E*Iz/(L**2)
         K[11,5]  = 2*E*Iz/L
-        K[11,7]  = -6*E*Iz/(L**2)
+        K[11,8]  = -6*E*Iz/(L**2)
         K[11,11] = 4*E*Iz/L  
 
         return K
@@ -194,7 +194,10 @@ num_nodes = 2
 beam       = Beam(num_nodes, num_disps)
 
 # Verify the symmetry of stiffness matrix
-K = beam.getStiffnessMatrix(dx, beam.E, beam.A, beam.G, beam.J, beam.Iy, beam.Iz)
+K = beam.getStiffnessMatrix(dx,
+                            beam.E, beam.A,
+                            beam.G, beam.J,
+                            beam.Iy, beam.Iz)
 print np.asmatrix(K) - np.asmatrix(K).transpose()
 
 # Verify the symmetry of mass matrix
