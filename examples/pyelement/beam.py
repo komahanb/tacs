@@ -11,12 +11,13 @@ class Beam(elements.pyElement):
         super(Beam, self).__init__(num_disp, num_nodes)
 
         self.A = 0.001 # m^2
-        self.rho = 2700 # kg/m^3
+        self.rho = 2700.0 # kg/m^3
         self.E = 70.0e9 # N/m^2
         self.G = 26.0e9 # N/m
 
         self.Iy = 8.33333333333333e-9 # m^4
         self.Iz = 8.33333333333333e-7 # m^4
+        self.Ip = self.Iy + self.Iz #m^4
         self.J = 3.12e-8 #m^4
 
         #print " Why no shearing?". Will be there if we use Timoshenko's constitutive relations
@@ -85,84 +86,82 @@ class Beam(elements.pyElement):
         
         return alpha*M
 
-    def getStiffnessMatrix(self, L, E, A, G, J, Iy, Iz):        
+    def getStiffnessMatrix(self, L, E, A, G, J, Ilead, Iflap):        
         K = np.zeros([12,12])
 
         # Axial u1
         K[0,0]   = E*A/L
         K[0,6]   = -E*A/L
 
-        # Lead lag v1
-        K[1,1]   = 12*E*Iy/(L**3)
-        K[1,4]   = 6*E*Iy/(L**2)
-        K[1,7]   = -12*E*Iy/(L**3)
-        K[1,10]  = 6*E*Iy/(L**2)
+        # Lead lag v1       
+        K[1,1]   = 12*E*Ilead/(L**3)
+        K[1,4]   = 6*E*Ilead/(L**2)
+        K[1,7]   = -12*E*Ilead/(L**3)
+        K[1,10]   = 6*E*Ilead/(L**2)
 
         # Flap w1
-        K[2,2]   = 12*E*Iz/(L**3)
-        K[2,5]   = 6*E*Iz/(L**2)
-        K[2,8]   = -12*E*Iz/(L**3)
-        K[2,11]  = 6*E*Iz/(L**2)
+        K[2,2]   = 12*E*Iflap/(L**3)
+        K[2,5]   = 6*E*Iflap/(L**2)
+        K[2,8]   = -12*E*Iflap/(L**3)
+        K[2,11]  = 6*E*Iflap/(L**2)
 
         # Torsion phi1
         K[3,3]   = G*J/L
         K[3,9]   = -G*J/L
 
         # Lead lag Bending psi1
-        K[4,1]   = 6*E*Iy/(L**2)
-        K[4,4]   = 4*E*Iy/L
-        K[4,7]   = -6*E*Iy/(L**2)
-        K[4,10]  = 2*E*Iy/L
+        K[4,1]   = 6*E*Ilead/(L**2)
+        K[4,4]   = 4*E*Ilead/L
+        K[4,7]   = -6*E*Ilead/(L**2)
+        K[4,10]  = 2*E*Ilead/L
 
         # Flap Bending theta1
-        K[5,2]   = 6*E*Iz/(L**2)
-        K[5,5]   = 4*E*Iz/L
-        K[5,8]   = -6*E*Iz/(L**2)
-        K[5,11]  = 2*E*Iz/L
+        K[5,2]   = 6*E*Iflap/(L**2)
+        K[5,5]   = 4*E*Iflap/L
+        K[5,8]   = -6*E*Iflap/(L**2)
+        K[5,11]  = 2*E*Iflap/L
 
         # Axial u2
         K[6,0]   = -E*A/L
         K[6,6]   = E*A/L
 
         # Lead Lag v2
-        K[7,1]   = -12*E*Iy/(L**3)
-        K[7,4]   = -6*E*Iy/(L**2)
-        K[7,7]   = 12*E*Iy/(L**3)
-        K[7,10]  = -6*E*Iy/(L**2)
+        K[7,1]   = -12*E*Ilead/(L**3)
+        K[7,4]   = -6*E*Ilead/(L**2)
+        K[7,7]   = 12*E*Ilead/(L**3)
+        K[7,10]  = -6*E*Ilead/(L**2)
 
         # Flap w2
-        K[8,2]   = -12*E*Iz/(L**3)
-        K[8,5]   = -6*E*Iz/(L**2)
-        K[8,8]   = 12*E*Iz/(L**3)
-        K[8,11]  = -6*E*Iz/(L**2)
+        K[8,2]   = -12*E*Iflap/(L**3)
+        K[8,5]   = -6*E*Iflap/(L**2)
+        K[8,8]   = 12*E*Iflap/(L**3)
+        K[8,11]  = -6*E*Iflap/(L**2)
 
         # Torsion phi2
         K[9,3]   = -G*J/L
         K[9,9]   = G*J/L
 
         # Lead Lag Bending Moment psi2
-        K[10,1]  = 6*E*Iy/(L**2)
-        K[10,4]  = 2*E*Iy/L
-        K[10,7]  = -6*E*Iy/(L**2)
-        K[10,10] = 4*E*Iy/L
+        K[10,1]  = 6*E*Ilead/(L**2)
+        K[10,4]  = 2*E*Ilead/L
+        K[10,7]  = -6*E*Ilead/(L**2)
+        K[10,10] = 4*E*Ilead/L
 
         # Flap Bending Moment theta2
-        K[11,2]  = 6*E*Iz/(L**2)
-        K[11,5]  = 2*E*Iz/L
-        K[11,8]  = -6*E*Iz/(L**2)
-        K[11,11] = 4*E*Iz/L  
+        K[11,2]  = 6*E*Iflap/(L**2)
+        K[11,5]  = 2*E*Iflap/L
+        K[11,8]  = -6*E*Iflap/(L**2)
+        K[11,11] = 4*E*Iflap/L  
 
         return K
     
     def getInitConditions(self, u, udot, uddot, xpts):
-        u[0]    = 0.1
-        udot[0] = 0.0
+        u[:]    = 0.01
+        udot[:] = 0.001
         return
 
     def addResidual(self, time, res, xpts, u, udot, uddot):
         l = xpts[3] - xpts[0]
-        mscale = self.rho*l/6.0
-        kscale = self.E/l
 
         # make matrices for easy multiplication
         q = np.asmatrix(u).transpose()
@@ -170,7 +169,16 @@ class Beam(elements.pyElement):
         qddot = np.asmatrix(uddot).transpose()
 
         # Compute residual
-        r = np.matmul(kscale*self.k, q) + np.matmul(mscale*self.m, qddot)
+        K = self.getStiffnessMatrix(l,
+                            self.E, self.A,
+                            self.G, self.J,
+                            self.Iz, self.Iy)
+        
+        M = self.getMassMatrix(l,
+                               self.rho,
+                               self.A, self.Ip) # or self.Iyy + self.Izz
+
+        r = np.matmul(K, q) + np.matmul(M, qddot)
 
         # Add the residual
         res += r.A1
@@ -179,9 +187,14 @@ class Beam(elements.pyElement):
 
     def addJacobian(self, time, J, alpha, beta, gamma, xpts, u, udot, uddot):
         l = xpts[3] - xpts[0]
-        mscale = self.rho*l/6.0
-        kscale = self.E/l
-        J += alpha*kscale*self.k + gamma*mscale*self.m
+        K = self.getStiffnessMatrix(l,
+                            self.E, self.A,
+                            self.G, self.J,
+                            self.Iz, self.Iy)        
+        M = self.getMassMatrix(l,
+                               self.rho,
+                               self.A, self.Ip) # or self.Iyy + self.Izz
+        J += alpha*K + gamma*M
         return
 
 #######################################################################
@@ -194,19 +207,18 @@ dx     = length/nelems
 
 num_disps = 6
 num_nodes = 2
-beam       = Beam(num_nodes, num_disps)
+beam      = Beam(num_nodes, num_disps)
 
 # Verify the symmetry of stiffness matrix
 K = beam.getStiffnessMatrix(dx,
                             beam.E, beam.A,
                             beam.G, beam.J,
-                            beam.Iy, beam.Iz)
+                            beam.Iz, beam.Iy)
 print np.asmatrix(K) - np.asmatrix(K).transpose()
 
 # Verify the symmetry of mass matrix
-M = beam.getMassMatrix(dx, beam.rho, beam.A, beam.J) # or beam.Iyy + beam.Izz
+M = beam.getMassMatrix(dx, beam.rho, beam.A, beam.Ip) # or beam.Iyy + beam.Izz
 print np.asmatrix(M) - np.asmatrix(M).transpose()
-stop
 
 #######################################################################
 # Create TACS using the elements
@@ -264,7 +276,7 @@ assert(nelems == ptr.shape[0]-1)
 comm = MPI.COMM_WORLD
 vars_per_node = num_disps
 creator = TACS.Creator(comm, vars_per_node)
-creator.setReorderingType(TACS.PY_AMD_ORDER, TACS.PY_DIRECT_SCHUR)
+creator.setReorderingType(TACS.PY_NATURAL_ORDER, TACS.PY_DIRECT_SCHUR)
 if comm.Get_rank() == 0:
     ids = np.arange(0, nelems, dtype=np.intc)
     creator.setGlobalConnectivity(npts, ptr, conn, ids)
@@ -279,14 +291,21 @@ tacs = creator.createTACS()
 
 bdf = TACS.BDFIntegrator(tacs, 0.0, 1.0, 100, 2)
 bdf.integrate()
-bdf.writeRawSolution('beam.dat', 0)
+bdf.writeRawSolution('beam.dat', 1)
 
 # Get the steady state values
 t, q, qdot, qddot = bdf.getStates(bdf.getNumTimeSteps())
 
 # Compute the natural frequencies
-num_freqs = 10
+num_freqs = 30
 freq = bdf.lapackNaturalFrequencies(q, qdot, qddot, write_modes=0, use_gyroscopic=0)
 freq = np.sort(freq[freq != 0])[0:num_freqs]
 
 print "frequencies", freq
+
+# Visualize -- gnuplot
+# Check IC
+# Check Beam props
+# Check sign conventions
+# What are bar frequencies
+# How to apply the rotational motion about the plane? How to transform in global frame?
