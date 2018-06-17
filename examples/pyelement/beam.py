@@ -19,68 +19,71 @@ class Beam(elements.pyElement):
         self.Iz = 8.33333333333333e-7 # m^4
         self.J = 3.12e-8 #m^4
 
-        #print " Why no shearing?".  Will be there if we use Timoshenko's constitutive relations
+        #print " Why no shearing?". Will be there if we use Timoshenko's constitutive relations
         print " Why Ip and J for polar moment?"
+        print " Sign conventions for lead lag and flap?"
         
         return 
 
-    def getMassMatrix(self, L, A, Ip ):        
+    def getMassMatrix(self, L, rho, A, Ip ):        
         # Setup MassMatrix
         M = np.zeros([12,12])
+
+        alpha = rho*L/6.0
         
         M[0,0]  = 140.0
         M[0,6]  = 70.0
         
         M[1,1]  = 156.0
-        M[1,5]  = 22*L
+        M[1,4]  = 22*L
         M[1,7]  = 54.0
-        M[1,11] = -13*L
+        M[1,10] = -13*L
         
         M[2,2]  = 156.0
-        M[2,4]  = -22*L
+        M[2,5]  = 22*L
         M[2,8]  = 54.0
-        M[2,10] = 13*L        
+        M[2,11] = -13*L        
 
         M[3,3]  = 140.0*Ip/A
         M[3,9]  = 70.0*Ip/A
 
-        M[4,2]  = -22*L
+        M[4,1]  = 22*L
         M[4,4]  = 4*L*L
-        M[4,8]  = -13*L
+        M[4,7]  = 13*L
         M[4,10] = -3*L*L
 
-        M[5,1]  = 22*L
+        M[5,2]  = 22*L
         M[5,5]  = 4*L*L
-        M[5,7]  = 13*L
+        M[5,8]  = 13*L
         M[5,11] = -3*L*L
          
         M[6,0]  = 70.0
         M[6,6]  = 140.0
         
         M[7,1]  = 54.0
-        M[7,5]  = 13.0*L
+        M[7,4]  = 13.0*L
         M[7,7]  = 156.0
-        M[7,11] = -22.0*L
+        M[7,10] = -22.0*L
         
         M[8,2]  = 54.0
-        M[8,4]  = -13*L
+        M[8,5]  = 13*L
         M[8,8]  = 156.0
-        M[8,10] = 22*L      
+        M[8,11] = -22*L      
 
         M[9,3] = 70.0*Ip/A
         M[9,9] = 140.0*Ip/A
 
-        M[10,2] = 13.0*L
+        M[10,1] = -13.0*L
         M[10,4] = -3.0*L*L
-        M[10,8] = 22.0*L
+        M[10,7] = -22.0*L
         M[10,10] = 4.0*L*L
 
-        M[11,1] = -13.0*L
+        M[11,2] = -13.0*L
         M[11,5] = -3.0*L*L
-        M[11,7] = -22.0*L
+        M[11,8] = -22.0*L
         M[11,11] = 4.0*L*L
         
-        return M
+        return alpha*M
 
     def getStiffnessMatrix(self, L, E, A, G, J, Iy, Iz):        
         K = np.zeros([12,12])
@@ -201,7 +204,7 @@ K = beam.getStiffnessMatrix(dx,
 print np.asmatrix(K) - np.asmatrix(K).transpose()
 
 # Verify the symmetry of mass matrix
-M = beam.getMassMatrix(dx, beam.A, beam.J)
+M = beam.getMassMatrix(dx, beam.rho, beam.A, beam.J) # or beam.Iyy + beam.Izz
 print np.asmatrix(M) - np.asmatrix(M).transpose()
 stop
 
