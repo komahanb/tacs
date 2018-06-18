@@ -289,7 +289,7 @@ tacs = creator.createTACS()
 # Integrator
 ######################################################################
 
-bdf = TACS.BDFIntegrator(tacs, 0.0, 1.0, 100, 2)
+bdf = TACS.BDFIntegrator(tacs, 0.0, 1.0, 100, 1)
 bdf.integrate()
 bdf.writeRawSolution('beam.dat', 1)
 
@@ -300,8 +300,11 @@ t, q, qdot, qddot = bdf.getStates(bdf.getNumTimeSteps())
 num_freqs = 30
 freq = bdf.lapackNaturalFrequencies(q, qdot, qddot, write_modes=0, use_gyroscopic=0)
 freq = np.sort(freq[freq != 0])[0:num_freqs]
-
+freq = np.sort(freq[freq != 1.0])[0:num_freqs]
 print "frequencies", freq
+
+for omega_tacs in freq:
+    print ('%12.5f') % (omega_tacs)
 
 # Visualize -- gnuplot
 # Check IC

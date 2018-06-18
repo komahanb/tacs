@@ -140,8 +140,8 @@ freq = np.sort(freq[freq != 0])[0:num_freqs]
 freq = np.sort(freq[freq != 1.0])[0:num_freqs]
 
 print 'Obtained natural frequencies are:'
-E   = 70e9
-rho = 2700.0
+E   = bar.E
+rho = bar.rho
 n   = 0
 for omega_tacs in freq:
     n = n + 1

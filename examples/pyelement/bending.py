@@ -216,10 +216,10 @@ freq = np.sort(freq[freq != 0])[0:num_freqs]
 freq = np.sort(freq[freq != 1.0])[0:num_freqs]
 
 print 'Obtained natural frequencies are:'
-E   = 70e9
-I   = 1/192.0
-rho = 2700.0
-A   = 0.5*0.5
+E   = beam.E
+I   = beam.I
+rho = beam.rho
+A   = beam.A
 n   = 0
 for omega_tacs in freq:
     n = n + 1
