@@ -115,7 +115,7 @@ class EBBeamBending(elements.pyElement):
 # Create an Element
 #######################################################################
 
-nelems = 500
+nelems = 50
 length = 5.0
 dx     = length/nelems
 
@@ -214,13 +214,21 @@ num_freqs = 10
 freq = bdf.lapackNaturalFrequencies(q, qdot, qddot, write_modes=0, use_gyroscopic=0)
 freq = np.sort(freq[freq != 0])[0:num_freqs]
 freq = np.sort(freq[freq != 1.0])[0:num_freqs]
+num_freqs = len(freq)
 
 print 'Obtained natural frequencies are:'
 E   = beam.E
 I   = beam.I
 rho = beam.rho
 A   = beam.A
-n   = 0
-for omega_tacs in freq:
+n   = 2
+beta = [1.875, 4.694]
+n = 2
+for k in xrange(num_freqs):
     n = n + 1
-    print ('%12.2f') % (omega_tacs)
+    beta.append((2*n-1)*np.pi/(2.0))
+n = 0
+for omega_tacs in freq:
+    omega_act = np.sqrt(E*I/(rho*A*length**4))*(beta[n])**2
+    n = n + 1
+    print ('%12.2f %12.2f') % (omega_tacs, omega_act) 
