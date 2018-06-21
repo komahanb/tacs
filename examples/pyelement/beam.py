@@ -1,6 +1,7 @@
 from mpi4py import MPI
 from tacs import TACS, elements
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Beam(elements.pyElement):
     """
@@ -220,6 +221,7 @@ print np.asmatrix(K) - np.asmatrix(K).transpose()
 M = beam.getMassMatrix(dx, beam.rho, beam.A, beam.Ip) # or beam.Iyy + beam.Izz
 print np.asmatrix(M) - np.asmatrix(M).transpose()
 
+stop
 #######################################################################
 # Create TACS using the elements
 #######################################################################
@@ -295,17 +297,20 @@ bdf.writeRawSolution('beam.dat', 1)
 
 # Get the steady state values
 t, q, qdot, qddot = bdf.getStates(bdf.getNumTimeSteps())
-
+qvals = q.getArray()
+for dof in range(num_disps):
+    print dof, qvals[dof::num_disps][:]
+    #plt.plot(qvals[dof::num_disps])
+    #plt.show()
+   
 # Compute the natural frequencies
-num_freqs = 30
+num_freqs = 10 + num_disps
 freq = bdf.lapackNaturalFrequencies(q, qdot, qddot, write_modes=0, use_gyroscopic=0)
 freq = np.sort(freq[freq != 0])[0:num_freqs]
-freq = np.sort(freq[freq != 1.0])[0:num_freqs]
-print "frequencies", freq
-
+freq = np.sort(freq[freq != 1])[0:num_freqs]
 for omega_tacs in freq:
     print ('%12.5f') % (omega_tacs)
-
+    
 # Visualize -- gnuplot
 # Check IC
 # Check Beam props

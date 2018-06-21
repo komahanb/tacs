@@ -1,6 +1,7 @@
 from mpi4py import MPI
 from tacs import TACS, elements
 import numpy as np
+import matplotlib.pyplot as plt
 
 class EBBeamBending(elements.pyElement):
     """
@@ -9,13 +10,18 @@ class EBBeamBending(elements.pyElement):
     """
     def __init__(self, num_disp, num_nodes):
         super(EBBeamBending, self).__init__(num_disp, num_nodes)
-
-        self.b   = 0.5           # m
-        self.h   = 0.5           # m
-        self.A   = self.b*self.h # m^2
-        self.rho = 2700.0        # kg/m^3
-        self.E   = 70.0e9        # N/m^2
-        self.I  = 1.0/192.0     # m^4
+        
+        self.E = 70.0e9 # N/m^2
+        self.A = 0.001 # m^2
+        self.I = 8.33333333333333e-9 # m^4 # flap
+        self.rho = 2700.0 # kg/m^3
+ 
+        #self.b   = 0.5           # m
+        #self.h   = 0.5           # m
+        #self.A   = self.b*self.h # m^2
+        #self.rho = 2700.0        # kg/m^3
+        #self.E   = 70.0e9        # N/m^2
+        #self.I  = 1.0/192.0     # m^4
 
         return 
 
@@ -116,7 +122,7 @@ class EBBeamBending(elements.pyElement):
 #######################################################################
 
 nelems = 50
-length = 5.0
+length = 2.0
 dx     = length/nelems
 
 num_disps = 2
@@ -208,7 +214,12 @@ bdf.writeRawSolution('beam.dat', 1)
 
 # Get the steady state values
 t, q, qdot, qddot = bdf.getStates(bdf.getNumTimeSteps())
-
+qvals = q.getArray()
+for dof in range(num_disps):
+    print dof, qvals[dof::num_disps][:]
+    plt.plot(qvals[dof::num_disps])
+    plt.show()
+    
 # Compute the natural frequencies
 num_freqs = 10
 freq = bdf.lapackNaturalFrequencies(q, qdot, qddot, write_modes=0, use_gyroscopic=0)
@@ -231,4 +242,4 @@ n = 0
 for omega_tacs in freq:
     omega_act = np.sqrt(E*I/(rho*A*length**4))*(beta[n])**2
     n = n + 1
-    print ('%12.2f %12.2f') % (omega_tacs, omega_act) 
+    print ('%12.2f %12.2f') % (omega_tacs/109.12, omega_act/109.12) 
