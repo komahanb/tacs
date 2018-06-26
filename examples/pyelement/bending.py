@@ -3,6 +3,35 @@ from tacs import TACS, elements
 import numpy as np
 import matplotlib.pyplot as plt
 
+angular_rate = 109.12
+
+def getFreqs(t, q, qdot, qddot):
+    # Compute the natural frequencies
+    num_freqs = 10
+    freq = bdf.lapackNaturalFrequencies(q, qdot, qddot, write_modes=0, use_gyroscopic=0)
+    freq = np.sort(freq[freq != 0])[0:num_freqs]
+    freq = np.sort(freq[freq != 1.0])[0:num_freqs]
+    num_freqs = len(freq)
+
+    print 'Obtained natural frequencies are:'
+    
+    E   = beam.E
+    I   = beam.I
+    rho = beam.rho
+    A   = beam.A
+    n   = 2
+    beta = [1.875, 4.694]
+    n = 2
+    for k in xrange(num_freqs):
+        n = n + 1
+        beta.append((2*n-1)*np.pi/(2.0))
+    n = 0
+    for omega_tacs in freq:
+        omega_act = np.sqrt(E*I/(rho*A*length**4))*(beta[n])**2
+        n = n + 1
+        print ('%12.2f %12.2f') % (omega_tacs/109.12, omega_act/109.12)
+    return
+
 class EBBeamBending(elements.pyElement):
     """
     Implements a beam in bending element with constant properties
@@ -11,11 +40,12 @@ class EBBeamBending(elements.pyElement):
     def __init__(self, num_disp, num_nodes):
         super(EBBeamBending, self).__init__(num_disp, num_nodes)
         
-        self.E = 70.0e9 # N/m^2
-        self.A = 0.001 # m^2
-        self.I = 8.33333333333333e-9 # m^4 # flap
-        self.rho = 2700.0 # kg/m^3
- 
+        self.E     = 70.0e9 # N/m^2
+        self.A     = 0.001 # m^2
+        self.I     = 8.33333333333333e-7 # m^4 # flap
+        self.rho   = 2700.0 # kg/m^3
+        self.speed = angular_rate #1.12
+        
         #self.b   = 0.5           # m
         #self.h   = 0.5           # m
         #self.A   = self.b*self.h # m^2
@@ -53,6 +83,20 @@ class EBBeamBending(elements.pyElement):
 
         return alpha*M
 
+    def getTransformationMatrix(self, phi):
+        T = np.zeros([4,4])
+        c = np.cos(phi)
+        s = np.sin(phi)
+        T[0,0] = c
+        T[0,1] = s
+        T[1,0] = -s
+        T[1,1] = c
+        T[2,2] = c
+        T[3,3] = c
+        T[2,3] = s
+        T[3,2] = -s
+        return np.asmatrix(T).transpose()
+    
     def getStiffnessMatrix(self, l, E, A, I):        
         K = np.zeros([4,4])
 
@@ -77,7 +121,7 @@ class EBBeamBending(elements.pyElement):
         K[3,1] = 2*l*l
         K[3,2] = -6*l
         K[3,3] = 4*l*l
-
+        
         return alpha*K
     
     def getInitConditions(self, u, udot, uddot, xpts):
@@ -93,15 +137,19 @@ class EBBeamBending(elements.pyElement):
         qdot = np.asmatrix(udot).transpose()
         qddot = np.asmatrix(uddot).transpose()
 
+        # transform from local to global coordinates
+        T = self.getTransformationMatrix(self.speed*time)
+        
         # Compute residual
-        K = self.getStiffnessMatrix(l,
-                                    self.E, self.A, self.I)        
-        M = self.getMassMatrix(l,
-                               self.rho,
-                               self.A)
+        K = T.transpose()*self.getStiffnessMatrix(l,
+                                                  self.E, self.A, self.I)*T
+        M = T.transpose()*self.getMassMatrix(l,
+                                             self.rho,
+                                             self.A)*T
 
-        r = np.matmul(K, q) + np.matmul(M, qddot)
+        r = np.matmul(K, q) + np.matmul(M, qddot) - self.speed*self.speed*np.matmul(M, q)
 
+        
         # Add the residual
         res += r.A1
         
@@ -109,19 +157,23 @@ class EBBeamBending(elements.pyElement):
 
     def addJacobian(self, time, J, alpha, beta, gamma, xpts, u, udot, uddot):
         l = xpts[3] - xpts[0]
-        K = self.getStiffnessMatrix(l,
-                                    self.E, self.A, self.I)        
-        M = self.getMassMatrix(l,
-                               self.rho,
-                               self.A)
-        J += alpha*K + gamma*M
+        # transform from local to global coordinates
+        T = self.getTransformationMatrix(self.speed*time)
+
+        K = T.transpose()*self.getStiffnessMatrix(l,
+                                                  self.E, self.A, self.I)*T
+        M = T.transpose()*self.getMassMatrix(l,
+                                             self.rho,
+                                             self.A)*T
+        
+        J += alpha*(K - self.speed*self.speed*M) + gamma*M 
         return
 
 #######################################################################
 # Create an Element
 #######################################################################
 
-nelems = 50
+nelems = 100
 length = 2.0
 dx     = length/nelems
 
@@ -208,38 +260,24 @@ tacs = creator.createTACS()
 # Integrator
 ######################################################################
 
-bdf = TACS.BDFIntegrator(tacs, 0.0, 1.0, 100, 2)
+steps_per_rotation = 360
+num_rotations = 10
+angular_freq = angular_rate/(2*np.pi)
+tfinal = num_rotations/angular_freq
+num_steps = num_rotations*steps_per_rotation
+order = 1
+bdf = TACS.BDFIntegrator(tacs, 0.0, tfinal, num_steps, order)
+bdf.setRelativeTolerance(1.0e-10)
+bdf.setAbsoluteTolerance(1.0e-12)
 bdf.integrate()
 bdf.writeRawSolution('beam.dat', 1)
 
 # Get the steady state values
+#for  tt in xrange(bdf.getNumTimeSteps()):
 t, q, qdot, qddot = bdf.getStates(bdf.getNumTimeSteps())
-qvals = q.getArray()
-for dof in range(num_disps):
-    print dof, qvals[dof::num_disps][:]
-    plt.plot(qvals[dof::num_disps])
-    plt.show()
-    
-# Compute the natural frequencies
-num_freqs = 10
-freq = bdf.lapackNaturalFrequencies(q, qdot, qddot, write_modes=0, use_gyroscopic=0)
-freq = np.sort(freq[freq != 0])[0:num_freqs]
-freq = np.sort(freq[freq != 1.0])[0:num_freqs]
-num_freqs = len(freq)
-
-print 'Obtained natural frequencies are:'
-E   = beam.E
-I   = beam.I
-rho = beam.rho
-A   = beam.A
-n   = 2
-beta = [1.875, 4.694]
-n = 2
-for k in xrange(num_freqs):
-    n = n + 1
-    beta.append((2*n-1)*np.pi/(2.0))
-n = 0
-for omega_tacs in freq:
-    omega_act = np.sqrt(E*I/(rho*A*length**4))*(beta[n])**2
-    n = n + 1
-    print ('%12.2f %12.2f') % (omega_tacs/109.12, omega_act/109.12) 
+getFreqs(t, q, qdot, qddot)
+## qvals = q.getArray()
+## for dof in range(num_disps):
+##     print dof, qvals[dof::num_disps][:]
+##     plt.plot(qvals[dof::num_disps])
+##     plt.show()
