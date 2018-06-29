@@ -11,6 +11,7 @@ class Bar(elements.pyElement):
         super(Bar, self).__init__(num_nodes, num_disp)
         self.E   = 70.0e9
         self.rho = 2700.0
+        self.ndof = num_nodes*num_disp
         self.k   = np.asmatrix(np.array([[1,-1], [-1,1]]))
         self.m   = np.asmatrix(np.array([[2, 1], [1, 2]]))
         return
@@ -21,9 +22,7 @@ class Bar(elements.pyElement):
         return
 
     def addResidual(self, time, res, xpts, u, udot, uddot):
-        l = xpts[3] - xpts[0]
-        mscale = self.rho*l/6.0
-        kscale = self.E/l
+        l = self.getElemLength(xpts) #[3] - xpts[0]
 
         # make matrices for easy multiplication
         q = np.asmatrix(u).transpose()
@@ -31,31 +30,82 @@ class Bar(elements.pyElement):
         qddot = np.asmatrix(uddot).transpose()
 
         # Compute residual
-        r = np.matmul(kscale*self.k, q) + np.matmul(mscale*self.m, qddot)
+        K = self.getStiffnessMatrix(l, self.E)
+        M = self.getMassMatrix(l, self.rho)
+        r = np.matmul(K, q) + np.matmul(M, qddot)
 
         # Add the residual 
         res += r.A1
         
-        return    
+        return
 
+    def getElemLength(self, xpts):
+        if self.ndof == 2:
+            l = xpts[3] - xpts[0]        
+        elif self.ndof == 3:
+            l = xpts[2*3] - xpts[0]
+        elif self.ndof == 4:
+            l = xpts[3*3] - xpts[0]
+        return l
+    
+    def getMassMatrix(self,  L, rho):
+        M = np.zeros([self.ndof,self.ndof])     
+        if self.ndof == 2:
+            M[0,:] =  [L*rho/3, L*rho/6]
+            M[1,:] =  [L*rho/6, L*rho/3]
+        elif self.ndof == 3:
+            M[0,:] =  [2*L*rho/15, L*rho/15, -L*rho/30]
+            M[1,:] =  [L*rho/15, 8*L*rho/15, L*rho/15]
+            M[2,:] =  [-L*rho/30, L*rho/15, 2*L*rho/15]
+        elif self.ndof == 4:
+            M[0,:] =  [8*L*rho/105, 33*L*rho/560, -3*L*rho/140, 19*L*rho/1680]
+            M[1,:] =  [33*L*rho/560, 27*L*rho/70, -27*L*rho/560, -3*L*rho/140]
+            M[2,:] =  [-3*L*rho/140, -27*L*rho/560, 27*L*rho/70, 33*L*rho/560]
+            M[3,:] =  [19*L*rho/1680, -3*L*rho/140, 33*L*rho/560, 8*L*rho/105]
+        return M
+
+    def getStiffnessMatrix(self, L, E):
+        K = np.zeros([self.ndof,self.ndof])     
+        if self.ndof == 2:
+            K[0,:] =  [E/L, -E/L]
+            K[1,:] =  [-E/L, E/L]
+        elif self.ndof == 3:
+            K[0,:] =  [7*E/(3*L), -8*E/(3*L), E/(3*L)]
+            K[1,:] =  [-8*E/(3*L), 16*E/(3*L), -8*E/(3*L)]
+            K[2,:] =  [E/(3*L), -8*E/(3*L), 7*E/(3*L)]
+        elif self.ndof == 4:
+            K[0,:] =  [37*E/(10*L), -189*E/(40*L), 27*E/(20*L), -13*E/(40*L)]
+            K[1,:] =  [-189*E/(40*L), 54*E/(5*L), -297*E/(40*L), 27*E/(20*L)]
+            K[2,:] =  [27*E/(20*L), -297*E/(40*L), 54*E/(5*L), -189*E/(40*L)]
+            K[3,:] =  [-13*E/(40*L), 27*E/(20*L), -189*E/(40*L), 37*E/(10*L)]
+        return K
+    
     def addJacobian(self, time, J, alpha, beta, gamma, xpts, u, udot, uddot):
-        l = xpts[3] - xpts[0]
-        mscale = self.rho*l/6.0
-        kscale = self.E/l
-        J += alpha*kscale*self.k + gamma*mscale*self.m
+        l = self.getElemLength(xpts) #[3] - xpts[0]
+        K = self.getStiffnessMatrix(l, self.E)
+        M = self.getMassMatrix(l, self.rho)
+        J += alpha*K + gamma*M
         return
 
 #######################################################################
 # Create an Element
 #######################################################################
 
-nelems = 100
+nelems = 10
 length = 1.0
 dx     = length/nelems
 
 num_disps = 1
-num_nodes = 2
+num_nodes = 4
 bar       = Bar(num_nodes, num_disps)
+
+# Verify the symmetry of stiffness matrix
+K = bar.getStiffnessMatrix(dx, bar.E)
+print np.asmatrix(K) - np.asmatrix(K).transpose()
+
+# Verify the symmetry of mass matrix
+M = bar.getMassMatrix(dx, bar.rho)
+print np.asmatrix(M) - np.asmatrix(M).transpose()
 
 #######################################################################
 # Create TACS using the elements
@@ -66,18 +116,27 @@ for i in xrange(nelems):
     elems.append(bar)    
 
 xpts = []
-for i in xrange(nelems+1):
-    x = [dx*i, 0.0, 0.0]
+for i in xrange((num_nodes-1)*nelems+1):
+    x = [dx*i/(num_nodes-1), 0.0, 0.0]
     xpts.extend(x)
-
+        
 ptr = [0]
 for i in xrange(nelems):
     ptr.extend([max(ptr)+num_nodes])
 
 conn = []
 for i in xrange(nelems):
-    conn.extend([i+0, i+1])
-    
+    if num_nodes == 2:
+        idx = num_nodes-1
+        conn.extend([idx*i+0, idx*i+1])
+    elif num_nodes == 3:
+        idx = num_nodes-1
+        print [idx*i+0, idx*i+1, idx*i+2]
+        conn.extend([idx*i+0, idx*i+1, idx*i+2])    
+    elif num_nodes == 4:
+        idx = num_nodes-1
+        conn.extend([idx*i+0, idx*i+1, idx*i+2, idx*i+3])
+
 ## elems  = [bar, bar, bar, bar]
 ## xpts   = [0.00 , 0.0, 0.0,
 ##           0.25 , 0.0, 0.0,
