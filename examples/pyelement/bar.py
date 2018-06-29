@@ -7,8 +7,8 @@ class Bar(elements.pyElement):
     Implements a bar element with constant properties across the
     length
     """
-    def __init__(self, num_disp, num_nodes):
-        super(Bar, self).__init__(num_disp, num_nodes)
+    def __init__(self, num_nodes, num_disp):
+        super(Bar, self).__init__(num_nodes, num_disp)
         self.E   = 70.0e9
         self.rho = 2700.0
         self.k   = np.asmatrix(np.array([[1,-1], [-1,1]]))

@@ -37,8 +37,8 @@ class EBBeamBending(elements.pyElement):
     Implements a beam in bending element with constant properties
     across the length
     """
-    def __init__(self, num_disp, num_nodes):
-        super(EBBeamBending, self).__init__(num_disp, num_nodes)
+    def __init__(self, num_nodes, num_disp):
+        super(EBBeamBending, self).__init__(num_nodes, num_disp)
         
         self.E     = 70.0e9 # N/m^2
         self.A     = 0.001 # m^2
@@ -267,8 +267,6 @@ tfinal = num_rotations/angular_freq
 num_steps = num_rotations*steps_per_rotation
 order = 1
 bdf = TACS.BDFIntegrator(tacs, 0.0, tfinal, num_steps, order)
-bdf.setRelativeTolerance(1.0e-10)
-bdf.setAbsoluteTolerance(1.0e-12)
 bdf.integrate()
 bdf.writeRawSolution('beam.dat', 1)
 
