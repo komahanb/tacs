@@ -3,42 +3,12 @@ from tacs import TACS, elements
 import numpy as np
 import matplotlib.pyplot as plt
 
-angular_rate = 0 # 109.12
-
-def getFreqs(t, q, qdot, qddot):
-    # Compute the natural frequencies
-    num_freqs = 10
-    freq = bdf.lapackNaturalFrequencies(q, qdot, qddot, write_modes=0, use_gyroscopic=0)
-    freq = np.sort(freq[freq != 0])[0:num_freqs]
-    freq = np.sort(freq[freq != 1.0])[0:num_freqs]
-    num_freqs = len(freq)
-
-    print 'Obtained natural frequencies are:'
-    
-    E   = beam.E
-    I   = beam.I
-    rho = beam.rho
-    A   = beam.A
-    n   = 2
-    beta = [1.875, 4.694]
-    n = 2
-    for k in xrange(num_freqs):
-        n = n + 1
-        beta.append((2*n-1)*np.pi/(2.0))
-    n = 0
-    for omega_tacs in freq:
-        omega_act = np.sqrt(E*I/(rho*A*length**4))*(beta[n])**2
-        n = n + 1
-        print ('%12.4f %12.4f') % (omega_tacs/109.12, omega_act/109.12)
-
-    return
-
 class EBBeamBending(elements.pyElement):
     """
     Implements a beam in bending element with constant properties
     across the length
     """
-    def __init__(self, num_nodes, num_disp):
+    def __init__(self, num_nodes, num_disp, angular_rate):
         super(EBBeamBending, self).__init__(num_nodes, num_disp)
         
         self.E         = 70.0e9 # N/m^2
@@ -46,6 +16,8 @@ class EBBeamBending(elements.pyElement):
         self.I         = 8.33333333333333e-7 # m^4 # flap
         self.rho       = 2700.0 # kg/m^3
         self.speed     = angular_rate #1.12
+
+        print "omega=", self.speed
         self.num_nodes = num_nodes
         self.ndof      = num_nodes*num_disp
 
@@ -56,8 +28,8 @@ class EBBeamBending(elements.pyElement):
         #self.E   = 70.0e9        # N/m^2
         #self.I  = 1.0/192.0     # m^4
 
-        return 
-
+        return
+       
     def getTransformationMatrix(self, phi):
         
         T = np.zeros([self.ndof,self.ndof])
@@ -233,124 +205,152 @@ class EBBeamBending(elements.pyElement):
 
         return
 
-#######################################################################
-# Create an Element
-#######################################################################
-
-nelems    = 10
-length    = 2.0
-dx        = length/nelems
-num_disps = 2
-num_nodes = 3
-beam      = EBBeamBending(num_nodes, num_disps)
-
-# Verify the symmetry of stiffness matrix
-K = beam.getStiffnessMatrix(dx,
-                            beam.E, beam.A,
-                            beam.I)
-print np.asmatrix(K) - np.asmatrix(K).transpose()
-
-# Verify the symmetry of mass matrix
-M = beam.getMassMatrix(dx, beam.rho, beam.A)
-print np.asmatrix(M) - np.asmatrix(M).transpose()
-
-#######################################################################
-# Create TACS using the elements
-#######################################################################
-
-elems = []
-for i in xrange(nelems):
-    elems.append(beam)    
-
-xpts = []
-for i in xrange((num_nodes-1)*nelems+1):
-    x = [dx*i/(num_nodes-1), 0.0, 0.0]
-    xpts.extend(x)
-
-ptr = [0]
-for i in xrange(nelems):
-    ptr.extend([max(ptr)+num_nodes])
-
-conn = []
-for i in xrange(nelems):
-    if num_nodes == 2:
-        idx = num_nodes-1
-        conn.extend([idx*i+0, idx*i+1])
-    elif num_nodes == 3:
-        idx = num_nodes-1
-        print [idx*i+0, idx*i+1, idx*i+2]
-        conn.extend([idx*i+0, idx*i+1, idx*i+2])    
-    elif num_nodes == 4:
-        idx = num_nodes-1
-        conn.extend([idx*i+0, idx*i+1, idx*i+2, idx*i+3])
-
-## elems  = [bar, bar, bar, bar]
-## xpts   = [0.00 , 0.0, 0.0,
-##           0.25 , 0.0, 0.0,
-##           0.50 , 0.0, 0.0,
-##           0.75 , 0.0, 0.0,
-##           1.00 , 0.0, 0.0]
-## conn   = [0, 1,
-##           1, 2,
-##           2, 3,
-##           3, 4]
-## ptr    = [0, 2, 4, 6, 8]
+def frequencies(angular_rate, num_nodes, num_freqs, ref_speed=109.12):
     
-bcs    = [0]
-bcptr  = None
-bcvars = None
-conn   = np.array(conn, dtype=np.intc)
-ptr    = np.array(ptr, dtype=np.intc)
-xpts   = np.array(xpts)        
-bcs    = np.array(bcs, dtype=np.intc)
-if bcptr is not None and bcvars is not None:
-    bcptr = np.array(bcptr,dtype=np.intc)
-    bcvars = np.array(bcvars,dtype=np.intc)
+    #######################################################################
+    # Create an Element
+    #######################################################################
 
-# Figure out lengths
-npts   = len(xpts)/3
-nelems = len(elems)
+    nelems    = 10
+    length    = 2.0
+    dx        = length/nelems
+    num_disps = 2
+    num_nodes = 3
+    beam      = EBBeamBending(num_nodes, num_disps, angular_rate)
 
-# Sanity check of data we have proper inputs
-assert(max(conn)+1 == npts)
-assert(nelems == ptr.shape[0]-1)
+    # Verify the symmetry of stiffness matrix
+    K = beam.getStiffnessMatrix(dx, beam.E, beam.A, beam.I)
+    #print np.asmatrix(K) - np.asmatrix(K).transpose()
 
-# Create TACS
-comm = MPI.COMM_WORLD
-vars_per_node = num_disps
-creator = TACS.Creator(comm, vars_per_node)
-creator.setReorderingType(TACS.PY_AMD_ORDER, TACS.PY_DIRECT_SCHUR)
-if comm.Get_rank() == 0:
-    ids = np.arange(0, nelems, dtype=np.intc)
-    creator.setGlobalConnectivity(npts, ptr, conn, ids)
-    creator.setNodes(xpts)
-    creator.setBoundaryConditions(bcs, bcptr, bcvars)            
-creator.setElements(elems)
-tacs = creator.createTACS()
+    # Verify the symmetry of mass matrix
+    M = beam.getMassMatrix(dx, beam.rho, beam.A)
+    #print np.asmatrix(M) - np.asmatrix(M).transpose()
 
-######################################################################
-# Integrator
-######################################################################
+    #######################################################################
+    # Create TACS using the elements
+    #######################################################################
 
-steps_per_rotation = 360
-num_rotations      = 1
-angular_freq       = angular_rate/(2*np.pi)
-if angular_freq != 0.0:
-    tfinal         = num_rotations/angular_freq
-else:
-    tfinal         = 1.0
-num_steps          = num_rotations*steps_per_rotation
-order              = 1
-bdf                = TACS.BDFIntegrator(tacs, 0.0, tfinal, num_steps, order)
-bdf.integrate()
-bdf.writeRawSolution('beam.dat', 1)
+    elems = []
+    for i in xrange(nelems):
+        elems.append(beam)    
+    
+    xpts = []
+    for i in xrange((num_nodes-1)*nelems+1):
+        x = [dx*i/(num_nodes-1), 0.0, 0.0]
+        xpts.extend(x)
+    
+    ptr = [0]
+    for i in xrange(nelems):
+        ptr.extend([max(ptr)+num_nodes])
+    
+    conn = []
+    for i in xrange(nelems):
+        if num_nodes == 2:
+            idx = num_nodes-1
+            conn.extend([idx*i+0, idx*i+1])
+        elif num_nodes == 3:
+            idx = num_nodes-1
+            conn.extend([idx*i+0, idx*i+1, idx*i+2])    
+        elif num_nodes == 4:
+            idx = num_nodes-1
+            conn.extend([idx*i+0, idx*i+1, idx*i+2, idx*i+3])
+    
+    ## elems  = [bar, bar, bar, bar]
+    ## xpts   = [0.00 , 0.0, 0.0,
+    ##           0.25 , 0.0, 0.0,
+    ##           0.50 , 0.0, 0.0,
+    ##           0.75 , 0.0, 0.0,
+    ##           1.00 , 0.0, 0.0]
+    ## conn   = [0, 1,
+    ##           1, 2,
+    ##           2, 3,
+    ##           3, 4]
+    ## ptr    = [0, 2, 4, 6, 8]
+        
+    bcs    = [0]
+    bcptr  = None
+    bcvars = None
+    conn   = np.array(conn, dtype=np.intc)
+    ptr    = np.array(ptr, dtype=np.intc)
+    xpts   = np.array(xpts)        
+    bcs    = np.array(bcs, dtype=np.intc)
+    if bcptr is not None and bcvars is not None:
+        bcptr = np.array(bcptr,dtype=np.intc)
+        bcvars = np.array(bcvars,dtype=np.intc)
+    
+    # Figure out lengths
+    npts   = len(xpts)/3
+    nelems = len(elems)
+    
+    # Sanity check of data we have proper inputs
+    assert(max(conn)+1 == npts)
+    assert(nelems == ptr.shape[0]-1)
+    
+    # Create TACS
+    comm = MPI.COMM_WORLD
+    vars_per_node = num_disps
+    creator = TACS.Creator(comm, vars_per_node)
+    creator.setReorderingType(TACS.PY_AMD_ORDER, TACS.PY_DIRECT_SCHUR)
+    if comm.Get_rank() == 0:
+        ids = np.arange(0, nelems, dtype=np.intc)
+        creator.setGlobalConnectivity(npts, ptr, conn, ids)
+        creator.setNodes(xpts)
+        creator.setBoundaryConditions(bcs, bcptr, bcvars)            
+    creator.setElements(elems)
+    tacs = creator.createTACS()
 
-# Get the steady state values
-#for  tt in xrange(bdf.getNumTimeSteps()):
-t, q, qdot, qddot = bdf.getStates(bdf.getNumTimeSteps())
-getFreqs(t, q, qdot, qddot)
-## qvals = q.getArray()
-## for dof in range(num_disps):
-##     print dof, qvals[dof::num_disps][:]
-##     plt.plot(qvals[dof::num_disps])
-##     plt.show()
+    ######################################################################
+    # Integrator
+    ######################################################################
+    
+    steps_per_rotation = 360
+    num_rotations      = 1
+    angular_freq       = angular_rate/(2*np.pi)
+    if angular_freq != 0.0:
+        tfinal         = num_rotations/angular_freq
+    else:
+        tfinal         = 1.0
+    num_steps          = num_rotations*steps_per_rotation
+    order              = 1
+    bdf                = TACS.BDFIntegrator(tacs, 0.0, tfinal, num_steps, order)
+
+    bdf.setPrintLevel(0)
+    bdf.integrate()   
+    bdf.writeRawSolution('beam.dat', 1)
+    
+    # Get the steady state values
+    t, q, qdot, qddot = bdf.getStates(bdf.getNumTimeSteps())
+    
+    # Compute the natural frequencies
+    freq = bdf.lapackNaturalFrequencies(q, qdot, qddot, write_modes=0, use_gyroscopic=0)
+    freq = np.sort(freq[freq != 0])#[0:num_freqs]
+    freq = np.sort(freq[freq != 1.0])#[0:num_freqs]
+    nfreqs = len(freq)
+    
+    print 'Obtained natural frequencies are:'
+    
+    E   = beam.E
+    I   = beam.I
+    rho = beam.rho
+    A   = beam.A
+    n   = 2
+    beta = [1.875, 4.694]
+    n = 2
+    for k in xrange(nfreqs):
+        n = n + 1
+        beta.append((2*n-1)*np.pi/(2.0))
+    n = 0
+    for omega_tacs in freq:
+        omega_act = np.sqrt(E*I/(rho*A*length**4))*(beta[n])**2
+        n = n + 1
+        print ('%12.4f %12.4f') % (omega_tacs/ref_speed, omega_act/ref_speed)
+
+    return np.array(freq/ref_speed)[0:num_freqs]
+  
+if __name__== "__main__":
+    angular_rate = 0.0
+    num_nodes = 3
+    num_freqs = 10
+    ref_speed = 109.12
+    omega = frequencies(angular_rate, num_nodes, num_freqs, ref_speed)
+    print omega
