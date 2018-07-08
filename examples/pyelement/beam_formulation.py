@@ -267,8 +267,8 @@ ubar  = Nu.dot(qloc)
 udbar = Nu.dot(qdloc)
 
 # Substitute these interpolants into the kinetic energy expression
-#T = T.subs(u, ubar)
-#T = T.subs(ud, udbar)
+T = T.subs(u, ubar)
+T = T.subs(ud, udbar)
 
 print '   dof 1 u :', Nu[:]
 
@@ -285,23 +285,54 @@ print '   dof 2 v :', Nv[:]
 
 qloc = sym.zeros(1,4)
 qloc[0] = vi
-qloc[1] = vj
-qloc[2] = thetai
-qloc[3] = thetaj
+qloc[1] = psii
+qloc[2] = vj
+qloc[3] = psij
 
 qdloc = sym.zeros(1,4)
 qdloc[0] = vdi
-qdloc[1] = vdj
-qdloc[2] = thetadi
-qdloc[3] = thetadj
+qdloc[1] = psidi
+qdloc[2] = vdj
+qdloc[3] = psidj
 
 # Form interpolants of nodal dof and their time derivatives
 vbar  = Nv.dot(qloc)
 vdbar = Nv.dot(qdloc)
 
 # Substitute these interpolants into the kinetic energy expression
-#T = T.subs(v, vbar)
-#T = T.subs(vd, vdbar)
+T = T.subs(v, vbar)
+T = T.subs(vd, vdbar)
+
+#---------------------------------------------------------------------#
+# Flap motion -- third degree of freedom
+#---------------------------------------------------------------------#
+
+Nw = sym.zeros(1,4)
+Nw[0] = 1 - 3*x**2/L**2 + 2*x**3/L**3
+Nw[1] = -(x - 2*x**2/L + x**3/L**2)
+Nw[2] = 3*x**2/L**2 - 2*x**3/L**3
+Nw[3] = -(-x**2/L + x**3/L**2)
+print '   dof 3 w :', Nw[:]
+
+qloc = sym.zeros(1,4)
+qloc[0] = wi
+qloc[1] = thetai
+qloc[2] = wj
+qloc[3] = thetaj
+
+qdloc = sym.zeros(1,4)
+qdloc[0] = wdi
+qdloc[1] = thetadi
+qdloc[2] = wdj
+qdloc[3] = thetadj
+
+# Form interpolants of nodal dof and their time derivatives
+wbar  = Nw.dot(qloc)
+wdbar = Nw.dot(qdloc)
+
+# Substitute these interpolants into the kinetic energy expression
+T = T.subs(w, wbar)
+T = T.subs(wd, wdbar)
 
 #---------------------------------------------------------------------#
 # Torsional motion -- fourth degree of freedom
@@ -329,9 +360,6 @@ T = T.subs(phid, phidbar)
 
 print '   dof 4 phi :', Nphi[:]
 
-
-
-
 #######################################################################
 # Extract mass matrix from discretized KE
 #######################################################################
@@ -341,13 +369,8 @@ M = sym.zeros(12,12)
 for i in xrange(12):
     for j in xrange(12):
         M[i,j] = sym.diff(sym.diff(T, qd[j]), qd[i]).integrate((x, 0, L))
-for i in xrange(10):
-    print ("M[%s,:] = ") % (i) , sym.simplify(M[i,:])
-
-printstop
-
-
-
+for i in xrange(12):
+    print ("      M[%s,:] = ") % (i) , sym.simplify(M[i,:])/(rho*b*h*L/420)
 
 # Form element matrices
 
