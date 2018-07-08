@@ -18,7 +18,9 @@ print '      thickness coordinate : z'
 
 print '   Radial distance of the point from hub'
 x = sym.Symbol('x')
+L = sym.Symbol('L')
 print '      axial nodal location : x'
+print '      length of element    : L'
 
 print '   Deformation field'
 ux = sym.Symbol('ux')
@@ -157,12 +159,150 @@ T0 = sym.integrate(T0, (y, -b/2, b/2), (z, -h/2, h/2))
 T1 = sym.integrate(T1, (y, -b/2, b/2), (z, -h/2, h/2))
 T2 = sym.integrate(T2, (y, -b/2, b/2), (z, -h/2, h/2))
 
+T = (T0 + T1 + T2)/2
+
 print "      T0 per unit length :", T0
 print "      T1 per unit length :", T1
 print "      T2 per unit length :", T2
 
+######################################################################
+# Spatial discretization 
+######################################################################
+
+print '\nIntroduce nodal degrees of freedom'
+print '      at i-th node : (ui, vi, wi, thetai, psii)'
+ui     = sym.Symbol('ui')
+vi     = sym.Symbol('vi')
+wi     = sym.Symbol('wi')
+thetai = sym.Symbol('thetai')
+psii   = sym.Symbol('psii')
+
+print '      at j-th node : (uj, vj, wj, thetaj, psij)'
+uj     = sym.Symbol('uj')
+vj     = sym.Symbol('vj')
+wj     = sym.Symbol('wj')
+thetaj = sym.Symbol('thetaj')
+psij   = sym.Symbol('psij')
+
+print '\nIntroduce time derivatives of nodal degrees of freedom'
+print '      at i-th node : (udi, vdi, wdi, thetadi, psidi)'
+udi     = sym.Symbol('udi')
+vdi     = sym.Symbol('vdi')
+wdi     = sym.Symbol('wdi')
+thetadi = sym.Symbol('thetadi')
+psidi   = sym.Symbol('psidi')
+
+print '      at j-th node : (udj, vdj, wdj, thetadj, psidj)'
+udj     = sym.Symbol('udj')
+vdj     = sym.Symbol('vdj')
+wdj     = sym.Symbol('wdj')
+thetadj = sym.Symbol('thetadj')
+psidj   = sym.Symbol('psidj')
+
+# Element dof vector (Generalized disps)
+q = sym.zeros(1,10)
+q[0] = ui
+q[1] = vi
+q[2] = wi
+q[3] = thetai
+q[4] = psii
+q[5] = uj
+q[6] = vj
+q[7] = wj
+q[8] = thetaj
+q[9] = psij
+
+# Time derivative of element dof vector (generalized velocities)
+qd = sym.zeros(1,10)
+qd[0] = udi
+qd[1] = vdi
+qd[2] = wdi
+qd[3] = thetadi
+qd[4] = psidi
+qd[5] = udj
+qd[6] = vdj
+qd[7] = wdj
+qd[8] = thetadj
+qd[9] = psidj
+
 # Use the shape functions for each DOF using nodal displacements
+print '\n Defining shape functions'
+
+#---------------------------------------------------------------------#
+# Axial motion -- first degree of freedom
+#---------------------------------------------------------------------#
+
+Nu = sym.zeros(1,2)
+Nu[0] = 1 - x/L
+Nu[1] = x/L
+
+qloc = sym.zeros(1,2)
+qloc[0] = ui
+qloc[1] = uj
+
+qdloc = sym.zeros(1,2)
+qdloc[0] = udi
+qdloc[1] = udj
+
+# Form interpolants of nodal dof and their time derivatives
+ubar  = Nu.dot(qloc)
+udbar = Nu.dot(qdloc)
+
+# Substitute these interpolants into the kinetic energy expression
+#T = T.subs(u, ubar)
+#T = T.subs(ud, udbar)
+
+print '   dof 1 u :', Nu[:]
+
+#---------------------------------------------------------------------#
+# Lead lag motion -- second degree of freedom
+#---------------------------------------------------------------------#
+
+Nv = sym.zeros(1,4)
+Nv[0] = 1 - 3*x**2/L**2 + 2*x**3/L**3
+Nv[1] = x - 2*x**2/L + x**3/L**2
+Nv[2] = 3*x**2/L**2 - 2*x**3/L**3
+Nv[3] = -x**2/L + x**3/L**2
+print '   dof 2 v :', Nv[:]
+
+qloc = sym.zeros(1,4)
+qloc[0] = vi
+qloc[1] = vj
+qloc[2] = thetai
+qloc[3] = thetaj
+
+qdloc = sym.zeros(1,4)
+qdloc[0] = vdi
+qdloc[1] = vdj
+qdloc[2] = thetadi
+qdloc[3] = thetadj
+
+# Form interpolants of nodal dof and their time derivatives
+vbar  = Nv.dot(qloc)
+vdbar = Nv.dot(qdloc)
+
+# Substitute these interpolants into the kinetic energy expression
+T = T.subs(v, vbar)
+T = T.subs(vd, vdbar)
+
+#######################################################################
+# Extract mass matrix from discretized KE
+#######################################################################
+
+# Form the mass matrix by its definition
+M = sym.zeros(10,10)
+for i in xrange(10):
+    for j in xrange(10):
+        M[i,j] = sym.diff(sym.diff(T, qd[j]), qd[i]).integrate((x, 0, L))
+for i in xrange(10):
+    print ("M[%s,:] = ") % (i) , (M[i,:])/(rho*b*h*L/420)
+
+printstop
+
+
+
 
 # Form element matrices
 
 # Repeat exercise for potential energy and matrices
+# global sape
