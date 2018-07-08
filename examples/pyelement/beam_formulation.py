@@ -46,27 +46,31 @@ print '   degrees of freedom (generalized coordinates)'
 u     = sym.Symbol('u')
 v     = sym.Symbol('v')
 w     = sym.Symbol('w')
+phi   = sym.Symbol('phi')
 theta = sym.Symbol('theta')
 psi   = sym.Symbol('psi')
 
-print '      axial deformation                      : u'
-print '      leadlag deformation                    : v'
-print '      flap deformation                       : w'
-print '      bending about y axis (flap bending)    : theta'
-print '      bending about z axis (leadlag bending) : psi'
+print '      axial deformation                       : u'
+print '      leadlag deformation                     : v'
+print '      flap deformation                        : w'
+print '      rotation about x axis (torsion)         : phi'
+print '      rotation about y axis (flap bending)    : theta'
+print '      rotation about z axis (leadlag bending) : psi'
 
 print '   time derivative of degrees of freedom (generalized coordinates)'
 ud     = sym.Symbol('ud')
 vd     = sym.Symbol('vd')
 wd     = sym.Symbol('wd')
+phid   = sym.Symbol('phid')
 thetad = sym.Symbol('thetad')
 psid   = sym.Symbol('psid')
 
-print '      dot of axial deformation                      : ud'
-print '      dot of leadlag deformation                    : vd'
-print '      dot of flap deformation                       : wd'
-print '      dot of bending about y axis (flap bending)    : thetad'
-print '      dot of bending about z axis (leadlag bending) : psid'
+print '      dot of axial deformation                       : ud'
+print '      dot of leadlag deformation                     : vd'
+print '      dot of flap deformation                        : wd'
+print '      dot of rotation about x axis (torsion)         : phid'
+print '      dot of rotation about y axis (flap bending)    : thetad'
+print '      dot of rotation about z axis (leadlag bending) : psid'
 
 ######################################################################
 # Velocity terms
@@ -113,29 +117,35 @@ print '\nKinetic Energy (T) per unit volume in terms of generalized coordinates 
 
 print '   Define deformation field'
 print '      ux <-- u + z theta - y psi'
-print '      uy <-- v'
-print '      uz <-- w'
+print '      uy <-- v - z phi'
+print '      uz <-- w + y phi'
 
 print '   Take time derivative of deformation field'
 print '      uxd <-- ud + z thetad - y psid'
-print '      uyd <-- vd'
-print '      uzd <-- wd'
+print '      uyd <-- vd - z phid'
+print '      uzd <-- wd + y phid'
 
 # Substitute KE terms with definitions for deformation
 T0 = T0.subs(ux, u + z*theta -y*psi)
-T0 = T0.subs(uy, v)
-T0 = T0.subs(uz, w)
+T0 = T0.subs(uy, v - z*phi)
+T0 = T0.subs(uz, w + y*phi)
 T1 = T1.subs(ux, u + z*theta -y*psi)
-T1 = T1.subs(uy, v)
-T1 = T1.subs(uz, w)
+T1 = T1.subs(uy, v - z*phi)
+T1 = T1.subs(uz, w + y*phi)
 T2 = T2.subs(ux, u + z*theta -y*psi)
-T2 = T2.subs(uy, v)
-T2 = T2.subs(uz, w)
+T2 = T2.subs(uy, v - z*phi)
+T2 = T2.subs(uz, w + y*phi)
 
 # replace time derivatives with dof derivatives
 T0 = T0.subs(uxd, ud + z*thetad - y*psid)
-T0 = T0.subs(uyd, vd)
-T0 = T0.subs(uzd, wd)
+T0 = T0.subs(uyd, vd - z*phid)
+T0 = T0.subs(uzd, wd + y*phid)
+T1 = T1.subs(uxd, ud + z*thetad - y*psid)
+T1 = T1.subs(uyd, vd - z*phid)
+T1 = T1.subs(uzd, wd + y*phid)
+T2 = T2.subs(uxd, ud + z*thetad - y*psid)
+T2 = T2.subs(uyd, vd - z*phid)
+T2 = T2.subs(uzd, wd + y*phid)
 
 print '   Kinetic energy terms in generalized coordinates'
 print "      T0 per unit volume as a function of dofs : ", T0
@@ -170,17 +180,19 @@ print "      T2 per unit length :", T2
 ######################################################################
 
 print '\nIntroduce nodal degrees of freedom'
-print '      at i-th node : (ui, vi, wi, thetai, psii)'
+print '      at i-th node : (ui, vi, wi, phii, thetai, psii)'
 ui     = sym.Symbol('ui')
 vi     = sym.Symbol('vi')
 wi     = sym.Symbol('wi')
+phii   = sym.Symbol('phii')
 thetai = sym.Symbol('thetai')
 psii   = sym.Symbol('psii')
 
-print '      at j-th node : (uj, vj, wj, thetaj, psij)'
+print '      at j-th node : (uj, vj, wj, phij, thetaj, psij)'
 uj     = sym.Symbol('uj')
 vj     = sym.Symbol('vj')
 wj     = sym.Symbol('wj')
+phij   = sym.Symbol('phij')
 thetaj = sym.Symbol('thetaj')
 psij   = sym.Symbol('psij')
 
@@ -189,6 +201,7 @@ print '      at i-th node : (udi, vdi, wdi, thetadi, psidi)'
 udi     = sym.Symbol('udi')
 vdi     = sym.Symbol('vdi')
 wdi     = sym.Symbol('wdi')
+phidi   = sym.Symbol('phidi')
 thetadi = sym.Symbol('thetadi')
 psidi   = sym.Symbol('psidi')
 
@@ -196,34 +209,39 @@ print '      at j-th node : (udj, vdj, wdj, thetadj, psidj)'
 udj     = sym.Symbol('udj')
 vdj     = sym.Symbol('vdj')
 wdj     = sym.Symbol('wdj')
+phidj   = sym.Symbol('phidj')
 thetadj = sym.Symbol('thetadj')
 psidj   = sym.Symbol('psidj')
 
 # Element dof vector (Generalized disps)
-q = sym.zeros(1,10)
+q = sym.zeros(1,12)
 q[0] = ui
 q[1] = vi
 q[2] = wi
-q[3] = thetai
-q[4] = psii
-q[5] = uj
-q[6] = vj
-q[7] = wj
-q[8] = thetaj
-q[9] = psij
+q[3] = phii
+q[4] = thetai
+q[5] = psii
+q[6] = uj
+q[7] = vj
+q[8] = wj
+q[9] = phij
+q[10] = thetaj
+q[11] = psij
 
 # Time derivative of element dof vector (generalized velocities)
-qd = sym.zeros(1,10)
+qd = sym.zeros(1,12)
 qd[0] = udi
 qd[1] = vdi
 qd[2] = wdi
-qd[3] = thetadi
-qd[4] = psidi
-qd[5] = udj
-qd[6] = vdj
-qd[7] = wdj
-qd[8] = thetadj
-qd[9] = psidj
+qd[3] = phidi
+qd[4] = thetadi
+qd[5] = psidi
+qd[6] = udj
+qd[7] = vdj
+qd[8] = wdj
+qd[9] = phidj
+qd[10] = thetadj
+qd[11] = psidj
 
 # Use the shape functions for each DOF using nodal displacements
 print '\n Defining shape functions'
@@ -282,20 +300,49 @@ vbar  = Nv.dot(qloc)
 vdbar = Nv.dot(qdloc)
 
 # Substitute these interpolants into the kinetic energy expression
-T = T.subs(v, vbar)
-T = T.subs(vd, vdbar)
+#T = T.subs(v, vbar)
+#T = T.subs(vd, vdbar)
+
+#---------------------------------------------------------------------#
+# Torsional motion -- fourth degree of freedom
+#---------------------------------------------------------------------#
+
+Nphi = sym.zeros(1,2)
+Nphi[0] = 1 - x/L
+Nphi[1] = x/L
+
+qloc = sym.zeros(1,2)
+qloc[0] = phii
+qloc[1] = phij
+
+qdloc = sym.zeros(1,2)
+qdloc[0] = phidi
+qdloc[1] = phidj
+
+# Form interpolants of nodal dof and their time derivatives
+phibar  = Nphi.dot(qloc)
+phidbar = Nphi.dot(qdloc)
+
+# Substitute these interpolants into the kinetic energy expression
+T = T.subs(phi, phibar)
+T = T.subs(phid, phidbar)
+
+print '   dof 4 phi :', Nphi[:]
+
+
+
 
 #######################################################################
 # Extract mass matrix from discretized KE
 #######################################################################
 
 # Form the mass matrix by its definition
-M = sym.zeros(10,10)
-for i in xrange(10):
-    for j in xrange(10):
+M = sym.zeros(12,12)
+for i in xrange(12):
+    for j in xrange(12):
         M[i,j] = sym.diff(sym.diff(T, qd[j]), qd[i]).integrate((x, 0, L))
 for i in xrange(10):
-    print ("M[%s,:] = ") % (i) , (M[i,:])/(rho*b*h*L/420)
+    print ("M[%s,:] = ") % (i) , sym.simplify(M[i,:])
 
 printstop
 
