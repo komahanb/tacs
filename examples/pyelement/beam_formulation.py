@@ -18,9 +18,9 @@ print '      thickness coordinate : z'
 
 print '   Radial distance of the point from hub'
 x = sym.Symbol('x')
-L = sym.Symbol('L')
+l = sym.Symbol('l')
 print '      axial nodal location : x'
-print '      length of element    : L'
+print '      length of element    : l'
 
 print '   Deformation field'
 ux = sym.Symbol('ux')
@@ -251,8 +251,8 @@ print '\n Defining shape functions'
 #---------------------------------------------------------------------#
 
 Nu = sym.zeros(1,2)
-Nu[0] = 1 - x/L
-Nu[1] = x/L
+Nu[0] = 1 - x/l
+Nu[1] = x/l
 
 qloc = sym.zeros(1,2)
 qloc[0] = ui
@@ -277,10 +277,10 @@ print '   dof 1 u :', Nu[:]
 #---------------------------------------------------------------------#
 
 Nv = sym.zeros(1,4)
-Nv[0] = 1 - 3*x**2/L**2 + 2*x**3/L**3
-Nv[1] = x - 2*x**2/L + x**3/L**2
-Nv[2] = 3*x**2/L**2 - 2*x**3/L**3
-Nv[3] = -x**2/L + x**3/L**2
+Nv[0] = 1 - 3*x**2/l**2 + 2*x**3/l**3
+Nv[1] = x - 2*x**2/l + x**3/l**2
+Nv[2] = 3*x**2/l**2 - 2*x**3/l**3
+Nv[3] = -x**2/l + x**3/l**2
 print '   dof 2 v :', Nv[:]
 
 qloc = sym.zeros(1,4)
@@ -308,10 +308,10 @@ T = T.subs(vd, vdbar)
 #---------------------------------------------------------------------#
 
 Nw = sym.zeros(1,4)
-Nw[0] = 1 - 3*x**2/L**2 + 2*x**3/L**3
-Nw[1] = -(x - 2*x**2/L + x**3/L**2)
-Nw[2] = 3*x**2/L**2 - 2*x**3/L**3
-Nw[3] = -(-x**2/L + x**3/L**2)
+Nw[0] = 1 - 3*x**2/l**2 + 2*x**3/l**3
+Nw[1] = -(x - 2*x**2/l + x**3/l**2)
+Nw[2] = 3*x**2/l**2 - 2*x**3/l**3
+Nw[3] = -(-x**2/l + x**3/l**2)
 print '   dof 3 w :', Nw[:]
 
 qloc = sym.zeros(1,4)
@@ -339,8 +339,8 @@ T = T.subs(wd, wdbar)
 #---------------------------------------------------------------------#
 
 Nphi = sym.zeros(1,2)
-Nphi[0] = 1 - x/L
-Nphi[1] = x/L
+Nphi[0] = 1 - x/l
+Nphi[1] = x/l
 
 qloc = sym.zeros(1,2)
 qloc[0] = phii
@@ -361,18 +361,28 @@ T = T.subs(phid, phidbar)
 print '   dof 4 phi :', Nphi[:]
 
 #######################################################################
+# Form the Lagrangian = KE - SE
+#######################################################################
+
+L = T #- V 
+
+#######################################################################
 # Extract mass matrix from discretized KE
 #######################################################################
 
-# Form the mass matrix by its definition
+# Form the mass matrix from its definition
 M = sym.zeros(12,12)
 for i in xrange(12):
     for j in xrange(12):
-        M[i,j] = sym.diff(sym.diff(T, qd[j]), qd[i]).integrate((x, 0, L))
+        M[i,j] = sym.diff(sym.diff(L, qd[j]), qd[i]).integrate((x, 0, l))
 for i in xrange(12):
-    print ("      M[%s,:] = ") % (i) , sym.simplify(M[i,:])/(rho*b*h*L/420)
+    print ("      M[%s,:] = ") % (i) , sym.simplify(M[i,:])/(rho*b*h*l/420)
+print 'common factor: rho*b*h*l/420\n'
 
-# Form element matrices
-
-# Repeat exercise for potential energy and matrices
-# global sape
+# Form the stiffness matrix from its definition
+K = sym.zeros(12,12)
+for i in xrange(12):
+    for j in xrange(12):
+        K[i,j] = sym.diff(sym.diff(L, q[j]), q[i]).integrate((x, 0, l))
+for i in xrange(12):
+    print ("      K[%s,:] = ") % (i) , sym.simplify(K[i,:][:]) #/(rho*b*h*l*omega**2/420)
