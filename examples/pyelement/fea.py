@@ -50,6 +50,44 @@ class Map(dict):
         # differentiated once
         return Map({key:value.diff(x) for (key,value) in self.items()})
 
+    def integrate(self, x, low, up):
+        '''
+        Member function to differentiate the values but retain the
+        keys (maybe append _x to denote diff??).
+        '''
+        # New diffeentiable map with same keys, but values
+        # differentiated once
+        return Map({key:value.integrate((x, low, up)) for (key,value) in self.items()})
+    
+    def __mul__(self, scalar):
+        '''
+        Overload multiplication operator for map
+        '''
+        return Map({key:value*scalar for (key,value) in self.items()})
+
+ 
+    def __div__(self, scalar):
+        '''
+        Overload division operator for map
+        '''
+        return Map({key:value/scalar for (key,value) in self.items()})
+
+    def __add__(self, B):
+        '''
+        overload addition operator for map
+        '''
+        C = Map()
+        for skey in self.keys():
+            for okey in B.keys():
+                if skey == okey:
+                    # same keys, so add the 'values' from each map
+                    C[skey] = self[skey] + B[okey]
+                else:
+                    # different keys, so place both the entries in new
+                    # map
+                    C[skey] = self[skey]
+                    C[okey] = B[okey]
+        return C
 
 class ShapeFunctions(Map):
     """
@@ -78,6 +116,13 @@ class ShapeFunctions(Map):
             
         return
 
+    def outer(self, B):
+        C = Map()
+        for skey in self.keys():
+            for okey in B.keys():
+                C[skey,okey] = self[skey]*B[okey]
+        return C
+    
     def create_shape(self):
 
         npoints = len(self.xpts)
