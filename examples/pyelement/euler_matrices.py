@@ -58,21 +58,64 @@ mu_1  = (N_u.outer(N_u).integrate(x, 0, L))*scale
 scale = -E*A
 ku_1   = (Nx_u.outer(Nx_u).integrate(x, 0, L))*scale
 
-scale = -rho*A*omega**2
-ku_2  = (N_u.outer(N_u).integrate(x, 0, L))*scale
+## scale = -rho*A*omega**2
+## ku_2  = (N_u.outer(N_u).integrate(x, 0, L))*scale
 
-
-KU = ku_1 + ku_2
+KU = ku_1 # + ku_2
 MU = mu_1
 
-print "stiffness matrix :", KU
-print "mass matrix      :", MU
+scale = rho*A*omega**2
+FU = (N_u*x).integrate(x,0,L)*scale
 
-stop
+print "axial - stiffness matrix :", KU
+print "axial - mass matrix      :", MU
+print "axial - force vector     :", FU
+
+dofs = ['u1', 'u2']
+
+kmat = KU.matrix(dofs)
+print ''
+for i in xrange(len(dofs)):
+    print ("K[%s,:] = ") % (i) , (kmat[i,:])[:]
+
+mmat = MU.matrix(dofs)
+print ''
+for i in xrange(len(dofs)):
+    print ("M[%s,:] = ") % (i) , (mmat[i,:])[:]
 
 ######################################################################
 # Create torsional motion matrices
 ######################################################################
+
+print ''
+print 'creating matrices for torsional motion'
+
+scale = rho*Ip
+mphi_1 = (N_phi.outer(N_phi).integrate(x, 0, L))*scale
+
+scale = -G*J
+kphi_1 = (Nx_phi.outer(Nx_phi).integrate(x, 0, L))*scale
+
+## scale = -rho*Iyy*omega**2
+## kphi_2 = (N_phi.outer(N_phi).integrate(x, 0, L))*scale
+
+KPHI = kphi_1 #+ kphi_2
+MPHI = mphi_1
+
+print "torsional - stiffness matrix :", KPHI
+print "torsional - mass matrix      :", MPHI
+
+dofs = ['phi1', 'phi2']
+
+kmat = KPHI.matrix(dofs)
+print ''
+for i in xrange(len(dofs)):
+    print ("K[%s,:] = ") % (i) , (kmat[i,:])[:]
+
+mmat = MPHI.matrix(dofs)
+print ''
+for i in xrange(len(dofs)):
+    print ("M[%s,:] = ") % (i) , (mmat[i,:])[:]
 
 ######################################################################
 # Create chordwise motion matrices
