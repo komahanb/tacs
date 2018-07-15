@@ -8,154 +8,62 @@ L = sym.Symbol('L')
 
 # Discretization
 npoints = 2
-if npoints == 2:
-    xpts = [0, L]
-elif npoints == 3:
-    xpts = [0, L/2, L]
-elif npoints == 4:
-    xpts = [0, L/3, 2*L/3, L]
 
-print xpts
+# Get the shape functions
+N_u   = ShapeFunctions('u'   , False, npoints)
+N_phi = ShapeFunctions('phi' , False, npoints)
+N_v   = ShapeFunctions('v'   , True, npoints)
+N_w   = ShapeFunctions('w'   , True, npoints)
 
-N = ShapeFunctions('u', False, xpts)
-H = ShapeFunctions('u', True, xpts)
+print 'shape functions'
+print N_u
+print N_phi
+print N_v
+print N_w
 
-print 'ordinary shape functions', N
-print "hermite shape functions", H
+print 'derivative of shape functions'
+Nx_u   = N_u.diff(x)
+Nx_phi = N_phi.diff(x)
+Nxx_v  = N_v.diff(x)
+Nxx_w  = N_w.diff(x)
+print Nx_u
+print Nx_phi
+print Nxx_v
+print Nxx_w
 
-stop
-
-# Define nodal dofs for the field variable
-uhat = nodal_dof('u', npoints)
-print 'coordinate are :', uhat
-
-# Construct polynomials for required number of points
-phiu = polynomial(x, npoints)
-print "basis functions are; ", phiu
-
-# Construct the field as a function of dofs    
-U = field(phiu, uhat, xpts)
-print 'field of u', U
-
-# Derivative of the field with respect to the coordinates give the
-# shape functions
-Nu = shape_functions(U, uhat)
-print 'shape functions are', Nu
-
-# Differentiate the shape functions 
-Nu_x = Nu.diff(x)
-print 'differentiated shape functions are', Nu_x
-
-#['',''] = (n*n).integrate((x,0,L))
-#  
-stop
-
-# Hermite shape functions as well
-
-
-# Define the number of points
-npoints = 2
-
-# Define the basis phi based on number of points
-phi = sym.zeros(1,2)
-phi[0,0] = 1
-phi[0,1] = x
-
-# Physical dofs parameters at each node (displacements, rotations)
-ui = sym.Symbol('ui')
-uj = sym.Symbol('uj')
-
-## vi     = sym.Symbol('vi')
-## wi     = sym.Symbol('wi')
-## phii   = sym.Symbol('phii')
-## thetai = sym.Symbol('thetai')
-## psii   = sym.Symbol('psii')
-
-## vj     = sym.Symbol('vj')
-## wj     = sym.Symbol('wj')
-## phij   = sym.Symbol('phij')
-## thetaj = sym.Symbol('thetaj')
-## psij   = sym.Symbol('psij')
-
-# Define the right hand side nodal values
-U = sym.zeros(2, 1)
-U[0,0] = ui
-U[1,0] = uj
-
-# Create the interpolation matrix
-PHI = sym.zeros(2,2)
-PHI[0,:] = phi.subs(x,0)
-PHI[1,:] = phi.subs(x,L)
-
-# Invert the interpolation matrix to find alphas
-alpha = PHI.inv()*U
-
-# Create the polynomial as a function of actual dof and x
-u =  phi*alpha
-
-# Differentiate with respect to the each rhs and get the shape functions
-print 'axial  displacement polynomial', u
-
-# Construct a map between nodal dof and corresponding shape function
-nodal_shape = Map()
-nodal_shape['ui'] = u.diff(ui)[:]
-nodal_shape['uj'] = u.diff(uj)[:]
-print nodal_shape
-stop
-
-
-
-
-
-
-
-
-
-N['phii']   = phi.diff(phii)
-
-N['vi']     = v.diff(vi)
-N['psii']   = v.diff(psii)
-
-N['wi']     = w.diff(wi)
-N['thetai'] = w.diff(thetai)
-
-
-N['phij']   = phi.diff(phij)
-
-N['vi']     = v.djff(vi)
-N['psij']   = v.diff(psij)
-
-N['wj']     = w.diff(wj)
-N['thetaj'] = w.diff(thetaj)
-
-
-
-
-
+# Define inertial and constitutive parameters
 E   = sym.Symbol('E')
 G   = sym.Symbol('G')
-Ip = sym.Symbol('Ip')
+Ip  = sym.Symbol('Ip')
 Iyy = sym.Symbol('Iyy')
 Izz = sym.Symbol('Izz')
 J   = sym.Symbol('J')
 A   = sym.Symbol('A')
 rho = sym.Symbol('rho')
 
+######################################################################
+# Create Axial motion matrices
+######################################################################
+
+######################################################################
+# Create torsional motion matrices
+######################################################################
+
+######################################################################
+# Create chordwise motion matrices
+######################################################################
+
+######################################################################
+# Create flapping motion matrices
+######################################################################
+
+######################################################################
+# Assemble element matrix
+######################################################################
 
 
-NU    = sym.zeros(1,2)
-NU[0] = u.diff(ui)
-NU[1] = u.diff(uj)
 
-
-
-
-
-NX = NU.diff(x)
-print "Nx=", NX
-
-print 'disp shape function', NU[0]
-print 'disp shape function', NU[1]
+stop
 
 K = E*A*(NU.diff(x).transpose()*NU.diff(x)).integrate((x,0,L))
 print "K=", K

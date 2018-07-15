@@ -2,6 +2,7 @@ import sympy as sym
 
 # Geometry
 x = sym.Symbol('x')
+L = sym.Symbol('L')
 
 ## class Coordinate:
 ##     """
@@ -55,14 +56,20 @@ class ShapeFunctions(Map):
     Class that extends a differentiable Map and creates a of shape
     functions
     """    
-    def __init__(self, dof_key_prefix, hermite, xpts, *args, **kw):
-        '''        
-        '''
+    def __init__(self, dof_key_prefix, hermite, npoints, *args, **kw):
         super(Map, self).__init__(*args, **kw)
-
+        
         self.dof_key_prefix = dof_key_prefix
-        self.hermite = hermite
-        self.xpts = xpts
+        self.hermite        = hermite
+
+        if npoints == 2:
+            self.xpts = [0, L]
+        elif npoints == 3:
+            self.xpts = [0, L/2, L]
+        elif npoints == 4:
+            self.xpts = [0, L/3, 2*L/3, L]
+        else:
+            raise
         
         if hermite is False:
             self.create_shape()
@@ -206,3 +213,25 @@ def shape_functions(field, coordinates):
         key = ('%s') % (dof)
         N[key] = field.diff(dof)
     return N
+
+if __name__ == "__main__":
+    # Define nodal dofs for the field variable
+    uhat = nodal_dof('u', npoints)
+    print 'coordinate are :', uhat
+
+    # Construct polynomials for required number of points
+    phiu = polynomial(x, npoints)
+    print "basis functions are; ", phiu
+
+    # Construct the field as a function of dofs    
+    U = field(phiu, uhat, xpts)
+    print 'field of u', U
+
+    # Derivative of the field with respect to the coordinates give the
+    # shape functions
+    Nu = shape_functions(U, uhat)
+    print 'shape functions are', Nu
+
+    # Differentiate the shape functions 
+    Nu_x = Nu.diff(x)
+    print 'differentiated shape functions are', Nu_x
