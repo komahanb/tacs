@@ -144,7 +144,7 @@ class ShapeFunctions(Map):
     Class that extends a differentiable Map and creates a of shape
     functions
     """    
-    def __init__(self, dof_key_prefix, hermite, npoints, *args, **kw):
+    def __init__(self, dof_key_prefix, hermite, npoints, reverse=False, *args, **kw):
         super(Map, self).__init__(*args, **kw)
         
         self.dof_key_prefix = dof_key_prefix
@@ -162,7 +162,7 @@ class ShapeFunctions(Map):
         if hermite is False:
             self.create_shape()
         else:
-            self.create_hermite_shape()
+            self.create_hermite_shape(reverse)
             
         return
 
@@ -203,7 +203,7 @@ class ShapeFunctions(Map):
 
         return
 
-    def create_hermite_shape(self):
+    def create_hermite_shape(self, reverse):
         npoints = len(self.xpts)
         ndof = npoints*2
         
@@ -242,8 +242,17 @@ class ShapeFunctions(Map):
         Beta = PHI.inv()*Alpha
         func = Phi.dot(Beta)
 
-        for i in xrange(ndof):
-            self[dkeys[i]] = func.diff(alpha[i])
+        if reverse is True:
+            k = 0
+            for i in xrange(ndof):
+                k += 1
+                if k % 2 == 0:
+                    self[dkeys[i]] = -func.diff(alpha[i])
+                else:
+                    self[dkeys[i]] = func.diff(alpha[i])
+        else:
+            for i in xrange(ndof):
+                self[dkeys[i]] = func.diff(alpha[i])
 
         return
     
