@@ -25,8 +25,8 @@ print ''
 print 'derivative of shape functions'
 Nx_u   = N_u.diff(x)
 Nx_phi = N_phi.diff(x)
-Nxx_v  = N_v.diff(x)
-Nxx_w  = N_w.diff(x)
+Nxx_v  = N_v.diff(x).diff(x)
+Nxx_w  = N_w.diff(x).diff(x)
 print Nx_u
 print Nx_phi
 print Nxx_v
@@ -81,7 +81,7 @@ for i in xrange(len(dofs)):
 mmat = MU.matrix(dofs)
 print ''
 for i in xrange(len(dofs)):
-    print ("M[%s,:] = ") % (i) , (mmat[i,:])[:]
+    print ("M[%s,:] = ") % (i) , (mmat[i,:])/(rho*A*L/420)
 
 ######################################################################
 # Create torsional motion matrices
@@ -115,88 +115,93 @@ for i in xrange(len(dofs)):
 mmat = MPHI.matrix(dofs)
 print ''
 for i in xrange(len(dofs)):
-    print ("M[%s,:] = ") % (i) , (mmat[i,:])[:]
+    print ("M[%s,:] = ") % (i) , (mmat[i,:])/(rho*A*L/420)
 
 ######################################################################
 # Create chordwise motion matrices
 ######################################################################
 
+print ''
+print 'creating matrices for chordwise motion'
+
+scale = rho*A
+mv_1  = (N_v.outer(N_v).integrate(x, 0, L))*scale
+
+scale = E*Izz
+kv_1  = (Nxx_v.outer(Nxx_v).integrate(x, 0, L))*scale
+
+KV = kv_1 #+ kv_2
+MV = mv_1
+
+print "chordwise - stiffness matrix :", KV
+print "chordwise - mass matrix      :", MV
+
+dofs = ['v1', 'v1_p', 'v2', 'v2_p']
+
+kmat = KV.matrix(dofs)
+print ''
+for i in xrange(len(dofs)):
+    print ("K[%s,:] = ") % (i) , (kmat[i,:])[:]
+
+mmat = MV.matrix(dofs)
+print ''
+for i in xrange(len(dofs)):
+    print ("M[%s,:] = ") % (i) , (mmat[i,:])/(rho*A*L/420)
+
 ######################################################################
 # Create flapping motion matrices
 ######################################################################
+
+print ''
+print 'creating matrices for flapwise motion'
+
+scale = rho*A
+mw_1  = (N_w.outer(N_w).integrate(x, 0, L))*scale
+
+scale = E*Iyy
+kw_1  = (Nxx_w.outer(Nxx_w).integrate(x, 0, L))*scale
+
+KW = kw_1 #+ kw_2
+MW = mw_1
+
+print "flapwise - stiffness matrix :", KW
+print "flapwise - mass matrix      :", MW
+
+dofs = ['w1', 'w1_p', 'w2', 'w2_p']
+
+kmat = KW.matrix(dofs)
+print ''
+for i in xrange(len(dofs)):
+    print ("K[%s,:] = ") % (i) , (kmat[i,:])[:]
+
+mmat = MW.matrix(dofs)
+print ''
+for i in xrange(len(dofs)):
+    print ("M[%s,:] = ") % (i) , (mmat[i,:])/(rho*A*L/420)
 
 ######################################################################
 # Assemble element matrix
 ######################################################################
 
-
-
-stop
-
-K = E*A*(NU.diff(x).transpose()*NU.diff(x)).integrate((x,0,L))
-print "K=", K
-
-M = rho*A*(NU.transpose()*NU).integrate((x,0,L))
-print "M=", M
-
-stop
-
-M = (nmat.transpose()*inertia*nmat).integrate((x, 0, L))
-for i in xrange(12): #ndofoernode*nnodes
-    print ("M[%s,:] = ") % (i) , (M[i,:])[:]
-
-K = (bmat.transpose()*C*bmat).integrate((x, 0, L))
 print ''
-for i in xrange(12):
-    print ("K[%s,:] = ") % (i) , (K[i,:])[:]
-    
-# each equation gets a row in shape function
-# ncols is as big as the numnodes*ndofpernode
-# nui nvi nvpi, nuj nvj npvj, nuk nvk npvk
-# 0   1   2      3   4   5     6   7   8 # global dof number
+print 'element dof vector'
+# Global dof vector
+q = ['u1', 'v1', 'w1', 'phi1', 'v1_p', 'w1_p',
+     'u2', 'v2', 'w2', 'phi2', 'v2_p', 'w2_p']
+print q
 
-nmat = sym.zeros(6,12)
-nmat[0,0]   = NU[0]
-nmat[0,6]   = NU[1]
-nmat[1,0+1] = NU[0]
-nmat[1,6+1] = NU[1]
-nmat[2,0+2] = NU[0]
-nmat[2,6+2] = NU[1]
-nmat[3,0+3] = NU[0]
-nmat[3,6+3] = NU[1]
-nmat[4,0+4] = NU[0]
-nmat[4,6+4] = NU[1]
-nmat[5,0+5] = NU[0]
-nmat[5,6+5] = NU[1]
-
-bmat = nmat.diff(x)
-
-inertia = sym.zeros(6,6)
-inertia[0,0] = rho*A
-inertia[1,1] = rho*A
-inertia[2,2] = rho*A
-inertia[3,3] = rho*Ip
-inertia[4,4] = rho*Iyy
-inertia[5,5] = rho*Izz
-
-C = sym.zeros(6,6)
-C[0,0] = E*A
-C[1,1] = 0
-C[2,2] = 0
-C[3,3] = G*J
-C[4,4] = E*Iyy
-C[5,5] = E*Izz
-
-M = (nmat.transpose()*inertia*nmat).integrate((x, 0, L))
-
-
-
-
-
-for i in xrange(12): #ndofoernode*nnodes
-    print ("M[%s,:] = ") % (i) , (M[i,:])[:]
-
-K = (bmat.transpose()*C*bmat).integrate((x, 0, L))
+# Global K matrix
 print ''
-for i in xrange(12):
+print 'element stiffness matrix'
+kmap = ku_1.union(kv_1.union(kw_1.union(kphi_1)))
+K = kmap.matrix(q)
+for i in xrange(len(q)):
     print ("K[%s,:] = ") % (i) , (K[i,:])[:]
+
+print ''
+print 'element mass matrix'
+# Global M matrix
+mmap = mu_1.union(mv_1.union(mw_1.union(mphi_1)))
+M = mmap.matrix(q)
+for i in xrange(len(q)):
+    print ("M[%s,:] = ") % (i) , (M[i,:])/(rho*L/420)
