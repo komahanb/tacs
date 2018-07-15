@@ -131,14 +131,13 @@ class Map(dict):
         coordinates supplied as dof
         '''
         dim = len(dofs)
-        vec = sym.zeros(dim)
         ridx = -1
+        vals = []
         for i in dofs:
             ridx += 1
-            val = self.get((i,j))
-            if val is not None:
-                vec[ridx] = val
-        return vec
+            val = self.get(i,0)
+            vals.append(val)            
+        return sym.Matrix(vals)
     
 class ShapeFunctions(Map):
     """
