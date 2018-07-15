@@ -23,17 +23,11 @@ import sympy as sym
 ## axial_ke = axial.ke
 ## axial_ke = axial.pe
 
-# Geometry
-x = sym.Symbol('x')
-L = sym.Symbol('L')
-
-npoints = 4
-
 def nodal_dof(identifier, npoints):
     dof = {}
     for n in xrange(npoints):
         key = ('%s%d') % (identifier, n+1)
-        dof[n+1] = sym.Symbol(key)
+        dof[n+1] = sym.var(key)
     return dof
 
 def polynomial(x, N):
@@ -46,33 +40,74 @@ def polynomial(x, N):
         p[i+1] = x**i
     return p
 
-def field(basis, coordinates):
+def field(basis, coordinates, xpts):
     num_basis = len(basis)
     num_coordinates = len(coordinates)
-    assert(num_basis==num_coordinates)    
+    assert(num_basis==num_coordinates)
+    assert(len(xpts)==num_coordinates)    
+
+    # Make matrices for easy multiplication from map 
     phi = []
     alpha = []
     for i in xrange(num_basis):
         phi.append(basis[i+1])
         alpha.append(coordinates[i+1])
-
-    # Make matrices for easy multiplication
-    phi = sym.Matrix(phi[:])
+    phi = sym.Matrix(phi)
     alpha = sym.Matrix(alpha)
+    
+    # Evaluate phi at points supplied and construct vandermonte matrix
+    PHI = []
+    for i in xrange(num_coordinates):
+        PHI.append(phi.subs(x,xpts[i])[:])
+    PHI = sym.Matrix(PHI)
+    print PHI
 
-    # Return the dot product of basis and coordinates
-    return phi.dot(alpha)
-           
-# Construct polynomials for required number of points
-basis = polynomial(x, npoints)
-print "polynomials are poly", basis
+    # Invert the interpolation matrix to find coeffsxs
+    beta = PHI.inv()*alpha
+
+    # inner product  of coeff and basis forms the function 
+    f = phi.dot(beta)
+
+    return f
+
+def shape_functions(field, coordinates):
+    N = {}
+    dofs = coordinates.values()
+    num_coordinates = len(dofs)
+    for dof in dofs:
+        key = ('%s') % (dof)
+        N[key] = field.diff(dof)
+    return N
+
+# Geometry
+x = sym.Symbol('x')
+L = sym.Symbol('L')
+
+# Discretization
+npoints = 2
+if npoints == 2:
+    xpts = [0, L]
+elif npoints == 3:
+    xpts = [0, L/2, L]
+elif npoints == 4:
+    xpts = [0, L/3, 2*L/3, L]
 
 # Define nodal dofs for the field variable
-coordinates = nodal_dof('u', npoints)
-print 'coordinate are ', coordinates
+uhat = nodal_dof('u', npoints)
+print 'coordinate are :', uhat
 
-u = field(basis, coordinates)
-print 'field of u', u
+# Construct polynomials for required number of points
+phiu = polynomial(x, npoints)
+print "basis functions are; ", phiu
+
+# Construct the field as a function of dofs    
+U = field(phiu, uhat, xpts)
+print 'field of u', U
+
+# Derivative of the field with respect to the coordinates give the
+# shape functions
+Nu = shape_functions(U, uhat)
+print 'shape functions are', Nu
 
 stop
 
