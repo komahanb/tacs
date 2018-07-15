@@ -89,6 +89,13 @@ class Map(dict):
                     C[okey] = B[okey]
         return C
 
+    def outer(self, B):
+        C = Map()
+        for skey in self.keys():
+            for okey in B.keys():
+                C[skey,okey] = self[skey]*B[okey]
+        return C
+    
 class ShapeFunctions(Map):
     """
     Class that extends a differentiable Map and creates a of shape
@@ -116,13 +123,6 @@ class ShapeFunctions(Map):
             
         return
 
-    def outer(self, B):
-        C = Map()
-        for skey in self.keys():
-            for okey in B.keys():
-                C[skey,okey] = self[skey]*B[okey]
-        return C
-    
     def create_shape(self):
 
         npoints = len(self.xpts)
