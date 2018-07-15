@@ -23,8 +23,31 @@ import sympy as sym
 ## axial_ke = axial.ke
 ## axial_ke = axial.pe
 
+class Map(dict):
+    """
+    A differentiable map implementation that extends python's
+    dictionary class.
+
+    Author: Komahan Boopathy (komahan@gatech.edu)
+    """
+    def __init__(self, *args, **kw):
+        '''
+        Constructor
+        '''
+        super(Map,self).__init__(*args, **kw)
+        return
+    
+    def diff(self, x):
+        '''
+        Member function to differentiate the values but retain the
+        keys (maybe append _x to denote diff??).
+        '''
+        # New diffeentiable map with same keys, but values
+        # differentiated once
+        return Map({key:value.diff(x) for (key,value) in self.items()})
+
 def nodal_dof(identifier, npoints):
-    dof = {}
+    dof = Map()
     for n in xrange(npoints):
         key = ('%s%d') % (identifier, n+1)
         dof[n+1] = sym.var(key)
@@ -35,7 +58,7 @@ def polynomial(x, N):
     Returns N polynomials each of from 0 to N-1.
     [x^0, x^1, X^2, ... ,  X**(N-1)]
     '''
-    p = {}
+    p = Map()
     for i in xrange(N):
         p[i+1] = x**i
     return p
@@ -71,7 +94,7 @@ def field(basis, coordinates, xpts):
     return f
 
 def shape_functions(field, coordinates):
-    N = {}
+    N = Map()
     dofs = coordinates.values()
     num_coordinates = len(dofs)
     for dof in dofs:
@@ -109,7 +132,17 @@ print 'field of u', U
 Nu = shape_functions(U, uhat)
 print 'shape functions are', Nu
 
+# Differentiate the shape functions 
+Nu_x = Nu.diff(x)
+print 'differentiated shape functions are', Nu_x
+
+#['',''] = (n*n).integrate((x,0,L))
+#  
 stop
+
+
+# Hermite shape functions as well
+
 
 # Define the number of points
 npoints = 2
@@ -155,7 +188,7 @@ u =  phi*alpha
 print 'axial  displacement polynomial', u
 
 # Construct a map between nodal dof and corresponding shape function
-nodal_shape = {}
+nodal_shape = Map()
 nodal_shape['ui'] = u.diff(ui)[:]
 nodal_shape['uj'] = u.diff(uj)[:]
 print nodal_shape
@@ -274,7 +307,6 @@ M = (nmat.transpose()*inertia*nmat).integrate((x, 0, L))
 
 
 
-#['',''] = (n*n).integrate((x,0,L))
 
 for i in xrange(12): #ndofoernode*nnodes
     print ("M[%s,:] = ") % (i) , (M[i,:])[:]
