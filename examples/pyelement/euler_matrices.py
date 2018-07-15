@@ -46,6 +46,109 @@ class Map(dict):
         # differentiated once
         return Map({key:value.diff(x) for (key,value) in self.items()})
 
+
+class ShapeFunctions(Map):
+    """
+    Class that extends a differentiable Map and creates a of shape
+    functions
+    """    
+    def __init__(self, dof_key_prefix, hermite, xpts, *args, **kw):
+        '''        
+        '''
+        super(Map, self).__init__(*args, **kw)
+
+        self.dof_key_prefix = dof_key_prefix
+        self.hermite = hermite
+        self.xpts = xpts
+        
+        if hermite is False:
+            self.create_shape()
+        else:
+            self.create_hermite_shape()
+            
+        return
+
+    def create_shape(self):
+
+        npoints = len(self.xpts)
+        
+        # Create list of dofs as symbols
+        alpha = []
+        dkeys = []
+        for n in xrange(npoints):
+            key = ('%s%d') % (self.dof_key_prefix, n+1)
+            dkeys.append(key)            
+            alpha.append(sym.var(key))
+            
+        # Create a list of polynomials for corresponding basis
+        phi = []
+        for i in xrange(npoints):
+            phi.append(x**i)
+
+        # matrix for linear algebra
+        Phi = sym.Matrix(phi)
+        Alpha = sym.Matrix(alpha)
+  
+        # Evaluate the polynomials at the given basis and construct a
+        # basis matrix
+        PHI = []
+        for i in xrange(npoints):
+            PHI.append(Phi.subs(x, xpts[i])[:])
+        PHI = sym.Matrix(PHI)
+        
+        # Invert the vandermonte matrix and dot with the dofs
+        Beta = PHI.inv()*Alpha
+        func = Phi.dot(Beta)
+
+        for i in xrange(npoints):
+            self[dkeys[i]] = func.diff(alpha[i])
+
+        return
+
+    def create_hermite_shape(self):
+        npoints = len(self.xpts)
+        ndof = npoints*2
+        
+        # Create list of dofs as symbols
+        alpha = []
+        dkeys = []
+        for n in xrange(npoints):
+            # variable
+            key = ('%s%d') % (self.dof_key_prefix, n+1)
+            dkeys.append(key)
+            alpha.append(sym.var(key))
+            
+            # derivative of variable
+            key = ('%s%d_p') % (self.dof_key_prefix, n+1)
+            dkeys.append(key)
+            alpha.append(sym.var(key))
+
+        # Create a list of polynomials for corresponding basis
+        phi = []
+        for i in xrange(ndof):
+            phi.append(x**i)
+
+        # matrix for linear algebra
+        Phi = sym.Matrix(phi)
+        Alpha = sym.Matrix(alpha)
+
+        # Evaluate the polynomials and derivative for the given basis
+        # at each given points
+        PHI = []
+        for i in xrange(npoints):
+            PHI.append(Phi.subs(x, xpts[i])[:])
+            PHI.append(Phi.diff(x).subs(x, xpts[i])[:])            
+        PHI = sym.Matrix(PHI)
+        
+        # Invert the vandermonte matrix and dot with the dofs
+        Beta = PHI.inv()*Alpha
+        func = Phi.dot(Beta)
+
+        for i in xrange(ndof):
+            self[dkeys[i]] = func.diff(alpha[i])
+
+        return
+    
 def nodal_dof(identifier, npoints):
     dof = Map()
     for n in xrange(npoints):
@@ -83,7 +186,6 @@ def field(basis, coordinates, xpts):
     for i in xrange(num_coordinates):
         PHI.append(phi.subs(x,xpts[i])[:])
     PHI = sym.Matrix(PHI)
-    print PHI
 
     # Invert the interpolation matrix to find coeffsxs
     beta = PHI.inv()*alpha
@@ -115,6 +217,12 @@ elif npoints == 3:
 elif npoints == 4:
     xpts = [0, L/3, 2*L/3, L]
 
+N = ShapeFunctions('u', False, xpts)
+H = ShapeFunctions('u', True, xpts)
+print 'ordinary shape functions', N
+print "hermite shape functions", H
+stop
+
 # Define nodal dofs for the field variable
 uhat = nodal_dof('u', npoints)
 print 'coordinate are :', uhat
@@ -139,7 +247,6 @@ print 'differentiated shape functions are', Nu_x
 #['',''] = (n*n).integrate((x,0,L))
 #  
 stop
-
 
 # Hermite shape functions as well
 
