@@ -10,10 +10,10 @@ L = sym.Symbol('L')
 npoints = 2
 
 # Get the shape functions
-N_u   = ShapeFunctions('u'   , False, npoints)
-N_phi = ShapeFunctions('phi' , False, npoints)
-N_v   = ShapeFunctions('v'   , True, npoints)
-N_w   = ShapeFunctions('w'   , True, npoints)
+N_u = ShapeFunctions('u', False, npoints)
+N_phi = ShapeFunctions('phi', False, npoints)
+N_v = ShapeFunctions('v', True, npoints)
+N_w = ShapeFunctions('w', True, npoints)
 
 print 'shape functions'
 print N_u
@@ -55,16 +55,17 @@ print 'creating matrices for axial motion'
 scale = rho*A
 mu_1  = (N_u.outer(N_u).integrate(x, 0, L))*scale
 
-scale = -E*A
+scale = E*A
 ku_1   = (Nx_u.outer(Nx_u).integrate(x, 0, L))*scale
 
-## scale = -rho*A*omega**2
-## ku_2  = (N_u.outer(N_u).integrate(x, 0, L))*scale
+# rotational effects in axial motion
+scale = -rho*A*omega**2
+ku_2  = (N_u.outer(N_u).integrate(x, 0, L))*scale
 
-KU = ku_1 # + ku_2
+KU = ku_1 + ku_2
 MU = mu_1
 
-scale = rho*A*omega**2
+scale = -rho*A*omega**2
 FU = (N_u*x).integrate(x,0,L)*scale
 
 print "axial - stiffness matrix :", KU
@@ -93,13 +94,13 @@ print 'creating matrices for torsional motion'
 scale = rho*Ip
 mphi_1 = (N_phi.outer(N_phi).integrate(x, 0, L))*scale
 
-scale = -G*J
+scale = G*J
 kphi_1 = (Nx_phi.outer(Nx_phi).integrate(x, 0, L))*scale
 
-## scale = -rho*Iyy*omega**2
-## kphi_2 = (N_phi.outer(N_phi).integrate(x, 0, L))*scale
+scale = -rho*Iyy*omega**2
+kphi_2 = (N_phi.outer(N_phi).integrate(x, 0, L))*scale
 
-KPHI = kphi_1 #+ kphi_2
+KPHI = kphi_1 + kphi_2
 MPHI = mphi_1
 
 print "torsional - stiffness matrix :", KPHI
@@ -130,7 +131,7 @@ mv_1  = (N_v.outer(N_v).integrate(x, 0, L))*scale
 scale = E*Izz
 kv_1  = (Nxx_v.outer(Nxx_v).integrate(x, 0, L))*scale
 
-KV = kv_1 #+ kv_2
+KV = kv_1 # + kv_2
 MV = mv_1
 
 print "chordwise - stiffness matrix :", KV
@@ -185,15 +186,28 @@ for i in xrange(len(dofs)):
 
 print ''
 print 'element dof vector'
+
 # Global dof vector
 q = ['u1', 'v1', 'w1', 'phi1', 'v1_p', 'w1_p',
      'u2', 'v2', 'w2', 'phi2', 'v2_p', 'w2_p']
-print q
+
+## # Global dof vector
+## q = ['u1', 'v1', 'w1', 'phi1', 'v1_p', 'w1_p',
+##      'u2', 'v2', 'w2', 'phi2', 'v2_p', 'w2_p',
+##      'u3', 'v3', 'w3', 'phi3', 'v3_p', 'w3_p']
+## print q
+
+## # Global dof vector
+## q = ['u1', 'v1', 'w1', 'phi1', 'v1_p', 'w1_p',
+##      'u2', 'v2', 'w2', 'phi2', 'v2_p', 'w2_p',
+##      'u3', 'v3', 'w3', 'phi3', 'v3_p', 'w3_p',
+##      'u4', 'v4', 'w4', 'phi4', 'v4_p', 'w4_p']
+## print q
 
 # Global K matrix
 print ''
 print 'element stiffness matrix'
-kmap = ku_1.union(kv_1.union(kw_1.union(kphi_1)))
+kmap = KU.union(KV.union(KW.union(KPHI)))
 K = kmap.matrix(q)
 for i in xrange(len(q)):
     print ("K[%s,:] = ") % (i) , (K[i,:])[:]
@@ -201,7 +215,14 @@ for i in xrange(len(q)):
 print ''
 print 'element mass matrix'
 # Global M matrix
-mmap = mu_1.union(mv_1.union(mw_1.union(mphi_1)))
+mmap = MU.union(MV.union(MW.union(MPHI)))
 M = mmap.matrix(q)
 for i in xrange(len(q)):
-    print ("M[%s,:] = ") % (i) , (M[i,:])/(rho*L/420)
+    print ("M[%s,:] = ") % (i) , (M[i,:])[:]
+
+print ''
+print 'element forcing'
+F = FU.vector(q)
+print F
+for i in xrange(len(q)):
+    print ("F[%s] = %s") % ((i) , (F[i]))
