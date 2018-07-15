@@ -77,23 +77,23 @@ class Map(dict):
         overload addition operator for map
         '''
         C = Map()
-        for skey in self.keys():
-            for okey in B.keys():
-                if skey == okey:
+        for self_key in self.keys():
+            for other_key in B.keys():
+                if self_key == other_key:
                     # same keys, so add the 'values' from each map
-                    C[skey] = self[skey] + B[okey]
+                    C[self_key] = self[self_key] + B[other_key]
                 else:
                     # different keys, so place both the entries in new
                     # map
-                    C[skey] = self[skey]
-                    C[okey] = B[okey]
+                    C[self_key] = self[self_key]
+                    C[other_key] = B[other_key]
         return C
 
     def outer(self, B):
         C = Map()
-        for skey in self.keys():
-            for okey in B.keys():
-                C[skey,okey] = self[skey]*B[okey]
+        for self_key in self.keys():
+            for other_key in B.keys():
+                C[self_key,other_key] = self[self_key]*B[other_key]
         return C
     
 class ShapeFunctions(Map):
