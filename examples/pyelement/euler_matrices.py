@@ -62,7 +62,7 @@ ku_1   = (Nx_u.outer(Nx_u).integrate(x, 0, L))*scale
 scale = -rho*A*omega**2
 ku_2  = (N_u.outer(N_u).integrate(x, 0, L))*scale
 
-KU = ku_1 #+ ku_2
+KU = ku_1 + ku_2
 MU = mu_1
 
 scale = -rho*A*omega**2
@@ -100,7 +100,7 @@ kphi_1 = (Nx_phi.outer(Nx_phi).integrate(x, 0, L))*scale
 scale = -rho*Iyy*omega**2
 kphi_2 = (N_phi.outer(N_phi).integrate(x, 0, L))*scale
 
-KPHI = kphi_1 #+ kphi_2
+KPHI = kphi_1 + kphi_2
 MPHI = mphi_1
 
 print "torsional - stiffness matrix :", KPHI
@@ -135,7 +135,7 @@ kv_1  = (Nxx_v.outer(Nxx_v).integrate(x, 0, L))*scale
 scale = -rho*A*omega**2
 kv_2  = (N_v.outer(N_v).integrate(x, 0, L))*scale
 
-KV = kv_1 #+ kv_2
+KV = kv_1 + kv_2
 MV = mv_1
 
 print "chordwise - stiffness matrix :", KV
