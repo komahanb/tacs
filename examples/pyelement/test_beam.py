@@ -62,41 +62,41 @@ class EulerBeam(elements.pyElement):
 
 
     def getM(self, L, A, Ip, rho, omega):
-        M = np.zeros([self.ndof,self.ndof])
+        M = np.zeros([self.ndof, self.ndof])
         M[0,:] =  [A*L*rho/3, 0, 0, 0, 0, 0, A*L*rho/6, 0, 0, 0, 0, 0]
-        M[1,:] =  [0, 13*A*L*rho/35, 0, 0, 11*A*L**2*rho/210, 0, 0, 9*A*L*rho/70, 0, 0, -13*A*L**2*rho/420, 0]
-        M[2,:] =  [0, 0, 13*A*L*rho/35, 0, 0, 11*A*L**2*rho/210, 0, 0, 9*A*L*rho/70, 0, 0, -13*A*L**2*rho/420]
+        M[1,:] =  [0, 13*A*L*rho/35, 0, 0, 0, 11*A*L**2*rho/210, 0, 9*A*L*rho/70, 0, 0, 0, -13*A*L**2*rho/420]
+        M[2,:] =  [0, 0, 13*A*L*rho/35, 0, -11*A*L**2*rho/210, 0, 0, 0, 9*A*L*rho/70, 0, 13*A*L**2*rho/420, 0]
         M[3,:] =  [0, 0, 0, Ip*L*rho/3, 0, 0, 0, 0, 0, Ip*L*rho/6, 0, 0]
-        M[4,:] =  [0, 11*A*L**2*rho/210, 0, 0, A*L**3*rho/105, 0, 0, 13*A*L**2*rho/420, 0, 0, -A*L**3*rho/140, 0]
-        M[5,:] =  [0, 0, 11*A*L**2*rho/210, 0, 0, A*L**3*rho/105, 0, 0, 13*A*L**2*rho/420, 0, 0, -A*L**3*rho/140]
+        M[4,:] =  [0, 0, -11*A*L**2*rho/210, 0, A*L**3*rho/105, 0, 0, 0, -13*A*L**2*rho/420, 0, -A*L**3*rho/140, 0]
+        M[5,:] =  [0, 11*A*L**2*rho/210, 0, 0, 0, A*L**3*rho/105, 0, 13*A*L**2*rho/420, 0, 0, 0, -A*L**3*rho/140]
         M[6,:] =  [A*L*rho/6, 0, 0, 0, 0, 0, A*L*rho/3, 0, 0, 0, 0, 0]
-        M[7,:] =  [0, 9*A*L*rho/70, 0, 0, 13*A*L**2*rho/420, 0, 0, 13*A*L*rho/35, 0, 0, -11*A*L**2*rho/210, 0]
-        M[8,:] =  [0, 0, 9*A*L*rho/70, 0, 0, 13*A*L**2*rho/420, 0, 0, 13*A*L*rho/35, 0, 0, -11*A*L**2*rho/210]
+        M[7,:] =  [0, 9*A*L*rho/70, 0, 0, 0, 13*A*L**2*rho/420, 0, 13*A*L*rho/35, 0, 0, 0, -11*A*L**2*rho/210]
+        M[8,:] =  [0, 0, 9*A*L*rho/70, 0, -13*A*L**2*rho/420, 0, 0, 0, 13*A*L*rho/35, 0, 11*A*L**2*rho/210, 0]
         M[9,:] =  [0, 0, 0, Ip*L*rho/6, 0, 0, 0, 0, 0, Ip*L*rho/3, 0, 0]
-        M[10,:] =  [0, -13*A*L**2*rho/420, 0, 0, -A*L**3*rho/140, 0, 0, -11*A*L**2*rho/210, 0, 0, A*L**3*rho/105, 0]
-        M[11,:] =  [0, 0, -13*A*L**2*rho/420, 0, 0, -A*L**3*rho/140, 0, 0, -11*A*L**2*rho/210, 0, 0, A*L**3*rho/105]
+        M[10,:] =  [0, 0, 13*A*L**2*rho/420, 0, -A*L**3*rho/140, 0, 0, 0, 11*A*L**2*rho/210, 0, A*L**3*rho/105, 0]
+        M[11,:] =  [0, -13*A*L**2*rho/420, 0, 0, 0, -A*L**3*rho/140, 0, -11*A*L**2*rho/210, 0, 0, 0, A*L**3*rho/105]
         return M
 
     def getForces(self, L, E, A, G, J, Iyy, Izz, rho, omega):
-        F = np.array(
+        F = -np.array(
             [[-A*L**2*omega**2*rho/6], [0], [0], [0], [0], [0], [-A*L**2*omega**2*rho/3], [0], [0], [0], [0], [0]]
             )
         return F
     
     def getK(self, L, E, A, G, J, Iyy, Izz, rho, omega):
-        K = np.zeros([self.ndof,self.ndof])
-        K[0,:] =  [A*E/L - A*L*omega**2*rho/3, 0, 0, 0, 0, 0, -A*E/L - A*L*omega**2*rho/6, 0, 0, 0, 0, 0]
-        K[1,:] =  [0, 12*E*Izz/L**3, 0, 0, 6*E*Izz/L**2, 0, 0, -12*E*Izz/L**3, 0, 0, 6*E*Izz/L**2, 0]
-        K[2,:] =  [0, 0, 12*E*Iyy/L**3, 0, 0, 6*E*Iyy/L**2, 0, 0, -12*E*Iyy/L**3, 0, 0, 6*E*Iyy/L**2]
-        K[3,:] =  [0, 0, 0, G*J/L - Iyy*L*omega**2*rho/3, 0, 0, 0, 0, 0, -G*J/L - Iyy*L*omega**2*rho/6, 0, 0]
-        K[4,:] =  [0, 6*E*Izz/L**2, 0, 0, 4*E*Izz/L, 0, 0, -6*E*Izz/L**2, 0, 0, 2*E*Izz/L, 0]
-        K[5,:] =  [0, 0, 6*E*Iyy/L**2, 0, 0, 4*E*Iyy/L, 0, 0, -6*E*Iyy/L**2, 0, 0, 2*E*Iyy/L]
-        K[6,:] =  [-A*E/L - A*L*omega**2*rho/6, 0, 0, 0, 0, 0, A*E/L - A*L*omega**2*rho/3, 0, 0, 0, 0, 0]
-        K[7,:] =  [0, -12*E*Izz/L**3, 0, 0, -6*E*Izz/L**2, 0, 0, 12*E*Izz/L**3, 0, 0, -6*E*Izz/L**2, 0]
-        K[8,:] =  [0, 0, -12*E*Iyy/L**3, 0, 0, -6*E*Iyy/L**2, 0, 0, 12*E*Iyy/L**3, 0, 0, -6*E*Iyy/L**2]
-        K[9,:] =  [0, 0, 0, -G*J/L - Iyy*L*omega**2*rho/6, 0, 0, 0, 0, 0, G*J/L - Iyy*L*omega**2*rho/3, 0, 0]
-        K[10,:] =  [0, 6*E*Izz/L**2, 0, 0, 2*E*Izz/L, 0, 0, -6*E*Izz/L**2, 0, 0, 4*E*Izz/L, 0]
-        K[11,:] =  [0, 0, 6*E*Iyy/L**2, 0, 0, 2*E*Iyy/L, 0, 0, -6*E*Iyy/L**2, 0, 0, 4*E*Iyy/L]
+        K = np.zeros([self.ndof, self.ndof])        
+        K[0,:] =  [A*E/L, 0, 0, 0, 0, 0, -A*E/L, 0, 0, 0, 0, 0]
+        K[1,:] =  [0, 12*E*Izz/L**3, 0, 0, 0, 6*E*Izz/L**2, 0, -12*E*Izz/L**3, 0, 0, 0, 6*E*Izz/L**2]
+        K[2,:] =  [0, 0, 12*E*Iyy/L**3, 0, -6*E*Iyy/L**2, 0, 0, 0, -12*E*Iyy/L**3, 0, -6*E*Iyy/L**2, 0]
+        K[3,:] =  [0, 0, 0, G*J/L, 0, 0, 0, 0, 0, -G*J/L, 0, 0]
+        K[4,:] =  [0, 0, -6*E*Iyy/L**2, 0, 4*E*Iyy/L, 0, 0, 0, 6*E*Iyy/L**2, 0, 2*E*Iyy/L, 0]
+        K[5,:] =  [0, 6*E*Izz/L**2, 0, 0, 0, 4*E*Izz/L, 0, -6*E*Izz/L**2, 0, 0, 0, 2*E*Izz/L]
+        K[6,:] =  [-A*E/L, 0, 0, 0, 0, 0, A*E/L, 0, 0, 0, 0, 0]
+        K[7,:] =  [0, -12*E*Izz/L**3, 0, 0, 0, -6*E*Izz/L**2, 0, 12*E*Izz/L**3, 0, 0, 0, -6*E*Izz/L**2]
+        K[8,:] =  [0, 0, -12*E*Iyy/L**3, 0, 6*E*Iyy/L**2, 0, 0, 0, 12*E*Iyy/L**3, 0, 6*E*Iyy/L**2, 0]
+        K[9,:] =  [0, 0, 0, -G*J/L, 0, 0, 0, 0, 0, G*J/L, 0, 0]
+        K[10,:] =  [0, 0, -6*E*Iyy/L**2, 0, 2*E*Iyy/L, 0, 0, 0, 6*E*Iyy/L**2, 0, 4*E*Iyy/L, 0]
+        K[11,:] =  [0, 6*E*Izz/L**2, 0, 0, 0, 2*E*Izz/L, 0, -6*E*Izz/L**2, 0, 0, 0, 4*E*Izz/L]
         return K
             
     def getInitConditions(self, u, udot, uddot, xpts):
@@ -161,7 +161,7 @@ def frequencies(angular_rate, num_nodes, num_freqs, ref_speed=109.12):
     # Create an Element
     #######################################################################
     
-    nelems = 50
+    nelems = 100
     length = 2.0
     dx = length/nelems
 
