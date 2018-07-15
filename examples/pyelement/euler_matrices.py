@@ -12,8 +12,8 @@ npoints = 2
 # Get the shape functions
 N_u = ShapeFunctions('u', False, npoints)
 N_phi = ShapeFunctions('phi', False, npoints)
-N_v = ShapeFunctions('v', True, npoints)
-N_w = ShapeFunctions('w', True, npoints)
+N_v = ShapeFunctions('v', True, npoints, False)
+N_w = ShapeFunctions('w', True, npoints, True)
 
 print 'shape functions'
 print N_u
@@ -62,7 +62,7 @@ ku_1   = (Nx_u.outer(Nx_u).integrate(x, 0, L))*scale
 scale = -rho*A*omega**2
 ku_2  = (N_u.outer(N_u).integrate(x, 0, L))*scale
 
-KU = ku_1 + ku_2
+KU = ku_1 #+ ku_2
 MU = mu_1
 
 scale = -rho*A*omega**2
@@ -100,7 +100,7 @@ kphi_1 = (Nx_phi.outer(Nx_phi).integrate(x, 0, L))*scale
 scale = -rho*Iyy*omega**2
 kphi_2 = (N_phi.outer(N_phi).integrate(x, 0, L))*scale
 
-KPHI = kphi_1 + kphi_2
+KPHI = kphi_1 #+ kphi_2
 MPHI = mphi_1
 
 print "torsional - stiffness matrix :", KPHI
@@ -131,7 +131,11 @@ mv_1  = (N_v.outer(N_v).integrate(x, 0, L))*scale
 scale = E*Izz
 kv_1  = (Nxx_v.outer(Nxx_v).integrate(x, 0, L))*scale
 
-KV = kv_1 # + kv_2
+# rotational dependence of chordwise motion
+scale = -rho*A*omega**2
+kv_2  = (N_v.outer(N_v).integrate(x, 0, L))*scale
+
+KV = kv_1 #+ kv_2
 MV = mv_1
 
 print "chordwise - stiffness matrix :", KV
@@ -188,8 +192,8 @@ print ''
 print 'element dof vector'
 
 # Global dof vector
-q = ['u1', 'v1', 'w1', 'phi1', 'v1_p', 'w1_p',
-     'u2', 'v2', 'w2', 'phi2', 'v2_p', 'w2_p']
+q = ['u1', 'v1', 'w1', 'phi1', 'w1_p', 'v1_p',
+     'u2', 'v2', 'w2', 'phi2', 'w2_p', 'v2_p']
 
 ## # Global dof vector
 ## q = ['u1', 'v1', 'w1', 'phi1', 'v1_p', 'w1_p',
@@ -218,7 +222,7 @@ print 'element mass matrix'
 mmap = MU.union(MV.union(MW.union(MPHI)))
 M = mmap.matrix(q)
 for i in xrange(len(q)):
-    print ("M[%s,:] = ") % (i) , (M[i,:])[:]
+    print ("M[%s,:] = ") % (i) , (M[i,:])
 
 print ''
 print 'element forcing'
