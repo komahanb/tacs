@@ -40,7 +40,7 @@ class Map(dict):
         '''
         super(Map,self).__init__(*args, **kw)
         return
-    
+
     def diff(self, x):
         '''
         Member function to differentiate the values but retain the
@@ -82,11 +82,22 @@ class Map(dict):
                 if self_key == other_key:
                     # same keys, so add the 'values' from each map
                     C[self_key] = self[self_key] + B[other_key]
-                else:
-                    # different keys, so place both the entries in new
-                    # map
-                    C[self_key] = self[self_key]
-                    C[other_key] = B[other_key]
+                ## else:
+                ##     print self_key, other_key
+                ##     raise 'dissimilar keys during addition'
+        return C
+
+    def union(self, B):
+        '''
+        Union of two maps with dissimilar keys
+        '''
+        C = Map()
+        for self_key in self.keys():
+            for other_key in B.keys():
+                # different keys, so place both the entries in new
+                # map
+                C[self_key] = self[self_key]
+                C[other_key] = B[other_key]
         return C
 
     def outer(self, B):
@@ -95,6 +106,39 @@ class Map(dict):
             for other_key in B.keys():
                 C[self_key,other_key] = self[self_key]*B[other_key]
         return C
+
+    def matrix(self, dofs):
+        '''
+        return the matrix representation of the map in the order of
+        coordinates supplied as dof
+        '''
+        dim = len(dofs)
+        mat = sym.zeros(dim,dim)
+        ridx = -1
+        for i in dofs:
+            ridx += 1
+            cidx = -1
+            for j in dofs:
+                cidx += 1
+                val = self.get((i,j))
+                if val is not None:
+                    mat[ridx,cidx] = val
+        return mat
+    
+    def vector(self, dofs):
+        '''
+        return the vector representation of the map in the order of
+        coordinates supplied as dof
+        '''
+        dim = len(dofs)
+        vec = sym.zeros(dim)
+        ridx = -1
+        for i in dofs:
+            ridx += 1
+            val = self.get((i,j))
+            if val is not None:
+                vec[ridx] = val
+        return vec
     
 class ShapeFunctions(Map):
     """
