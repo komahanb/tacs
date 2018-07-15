@@ -222,7 +222,7 @@ print 'element mass matrix'
 mmap = MU.union(MV.union(MW.union(MPHI)))
 M = mmap.matrix(q)
 for i in xrange(len(q)):
-    print ("M[%s,:] = ") % (i) , (M[i,:])
+    print ("M[%s,:] = ") % (i) , (M[i,:])[:]
 
 print ''
 print 'element forcing'
