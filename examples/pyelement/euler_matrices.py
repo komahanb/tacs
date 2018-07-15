@@ -21,6 +21,7 @@ print N_phi
 print N_v
 print N_w
 
+print ''
 print 'derivative of shape functions'
 Nx_u   = N_u.diff(x)
 Nx_phi = N_phi.diff(x)
@@ -41,9 +42,33 @@ J   = sym.Symbol('J')
 A   = sym.Symbol('A')
 rho = sym.Symbol('rho')
 
+# Dynamics parameters
+omega = sym.Symbol('omega')
+
 ######################################################################
 # Create Axial motion matrices
 ######################################################################
+
+print ''
+print 'creating matrices for axial motion'
+
+scale = rho*A
+mu_1  = (N_u.outer(N_u).integrate(x, 0, L))*scale
+
+scale = -E*A
+ku_1   = (Nx_u.outer(Nx_u).integrate(x, 0, L))*scale
+
+scale = -rho*A*omega**2
+ku_2  = (N_u.outer(N_u).integrate(x, 0, L))*scale
+
+
+KU = ku_1 + ku_2
+MU = mu_1
+
+print "stiffness matrix :", KU
+print "mass matrix      :", MU
+
+stop
 
 ######################################################################
 # Create torsional motion matrices
