@@ -41,7 +41,6 @@ class EulerBeam(elements.pyElement):
     def getTransformationMatrix(self, phi):        
         T = np.zeros([self.ndof, self.ndof])
 
-        
         c = np.cos(phi)
         s = np.sin(phi)
 
@@ -61,8 +60,9 @@ class EulerBeam(elements.pyElement):
         
         return np.asmatrix(T)
 
-    def getM(self, L, A, Ip, rho, omega):        
-        M = np.zeros([12,12])
+
+    def getM(self, L, A, Ip, rho, omega):
+        M = np.zeros([self.ndof,self.ndof])
         M[0,:] =  [A*L*rho/3, 0, 0, 0, 0, 0, A*L*rho/6, 0, 0, 0, 0, 0]
         M[1,:] =  [0, 13*A*L*rho/35, 0, 0, 11*A*L**2*rho/210, 0, 0, 9*A*L*rho/70, 0, 0, -13*A*L**2*rho/420, 0]
         M[2,:] =  [0, 0, 13*A*L*rho/35, 0, 0, 11*A*L**2*rho/210, 0, 0, 9*A*L*rho/70, 0, 0, -13*A*L**2*rho/420]
@@ -77,20 +77,26 @@ class EulerBeam(elements.pyElement):
         M[11,:] =  [0, 0, -13*A*L**2*rho/420, 0, 0, -A*L**3*rho/140, 0, 0, -11*A*L**2*rho/210, 0, 0, A*L**3*rho/105]
         return M
 
-    def getK(self, L, E, A, G, J, Iyy, Izz, omega):
-        K = np.zeros([12,12])
-        K[0,:] =  [A*E/L, 0, 0, 0, 0, 0, -A*E/L, 0, 0, 0, 0, 0]
+    def getForces(self, L, E, A, G, J, Iyy, Izz, rho, omega):
+        F = np.array(
+            [[-A*L**2*omega**2*rho/6], [0], [0], [0], [0], [0], [-A*L**2*omega**2*rho/3], [0], [0], [0], [0], [0]]
+            )
+        return F
+    
+    def getK(self, L, E, A, G, J, Iyy, Izz, rho, omega):
+        K = np.zeros([self.ndof,self.ndof])
+        K[0,:] =  [A*E/L - A*L*omega**2*rho/3, 0, 0, 0, 0, 0, -A*E/L - A*L*omega**2*rho/6, 0, 0, 0, 0, 0]
         K[1,:] =  [0, 12*E*Izz/L**3, 0, 0, 6*E*Izz/L**2, 0, 0, -12*E*Izz/L**3, 0, 0, 6*E*Izz/L**2, 0]
         K[2,:] =  [0, 0, 12*E*Iyy/L**3, 0, 0, 6*E*Iyy/L**2, 0, 0, -12*E*Iyy/L**3, 0, 0, 6*E*Iyy/L**2]
-        K[3,:] =  [0, 0, 0, G*J/L, 0, 0, 0, 0, 0, -G*J/L, 0, 0]
+        K[3,:] =  [0, 0, 0, G*J/L - Iyy*L*omega**2*rho/3, 0, 0, 0, 0, 0, -G*J/L - Iyy*L*omega**2*rho/6, 0, 0]
         K[4,:] =  [0, 6*E*Izz/L**2, 0, 0, 4*E*Izz/L, 0, 0, -6*E*Izz/L**2, 0, 0, 2*E*Izz/L, 0]
         K[5,:] =  [0, 0, 6*E*Iyy/L**2, 0, 0, 4*E*Iyy/L, 0, 0, -6*E*Iyy/L**2, 0, 0, 2*E*Iyy/L]
-        K[6,:] =  [-A*E/L, 0, 0, 0, 0, 0, A*E/L, 0, 0, 0, 0, 0]
+        K[6,:] =  [-A*E/L - A*L*omega**2*rho/6, 0, 0, 0, 0, 0, A*E/L - A*L*omega**2*rho/3, 0, 0, 0, 0, 0]
         K[7,:] =  [0, -12*E*Izz/L**3, 0, 0, -6*E*Izz/L**2, 0, 0, 12*E*Izz/L**3, 0, 0, -6*E*Izz/L**2, 0]
         K[8,:] =  [0, 0, -12*E*Iyy/L**3, 0, 0, -6*E*Iyy/L**2, 0, 0, 12*E*Iyy/L**3, 0, 0, -6*E*Iyy/L**2]
-        K[9,:] =  [0, 0, 0, -G*J/L, 0, 0, 0, 0, 0, G*J/L, 0, 0]
+        K[9,:] =  [0, 0, 0, -G*J/L - Iyy*L*omega**2*rho/6, 0, 0, 0, 0, 0, G*J/L - Iyy*L*omega**2*rho/3, 0, 0]
         K[10,:] =  [0, 6*E*Izz/L**2, 0, 0, 2*E*Izz/L, 0, 0, -6*E*Izz/L**2, 0, 0, 4*E*Izz/L, 0]
-        K[11,:] =  [0, 0, 6*E*Iyy/L**2, 0, 0, 2*E*Iyy/L, 0, 0, -6*E*Iyy/L**2, 0, 0, 4*E*Iyy/L]        
+        K[11,:] =  [0, 0, 6*E*Iyy/L**2, 0, 0, 2*E*Iyy/L, 0, 0, -6*E*Iyy/L**2, 0, 0, 4*E*Iyy/L]
         return K
             
     def getInitConditions(self, u, udot, uddot, xpts):
@@ -115,9 +121,14 @@ class EulerBeam(elements.pyElement):
         qddot = np.asmatrix(uddot).transpose()
 
         # Compute matrices
-        K = T.transpose()*self.getK(l, self.E, self.A, self.G, self.J, self.Iy, self.Iz, self.speed)*T
+        K = T.transpose()*self.getK(l, self.E, self.A, self.G, self.J, self.Iy, self.Iz, self.density, self.speed)*T
         M = T.transpose()*self.getM(l, self.A, self.Ip, self.density, self.speed)*T
-        r = np.matmul(M, qddot) + np.matmul(K, q)
+
+        # Add forcing
+        F = self.getForces(l, self.E, self.A, self.G, self.J, self.Iy, self.Iz, self.density, self.speed)
+
+        # Add terms into the residual
+        r = np.matmul(M, qddot) + np.matmul(K, q) + F
         
         # Add the residual
         res += r.A1
@@ -136,7 +147,7 @@ class EulerBeam(elements.pyElement):
         T = self.getTransformationMatrix(self.speed*time)
 
         # stiffness and mass matrices in global coordinates
-        K = T.transpose()*self.getK(l, self.E, self.A, self.G, self.J, self.Iy, self.Iz, self.speed)*T
+        K = T.transpose()*self.getK(l, self.E, self.A, self.G, self.J, self.Iy, self.Iz, self.density, self.speed)*T
         M = T.transpose()*self.getM(l, self.A, self.Ip, self.density, self.speed)*T
 
         # add values to the jacobian
@@ -150,7 +161,7 @@ def frequencies(angular_rate, num_nodes, num_freqs, ref_speed=109.12):
     # Create an Element
     #######################################################################
     
-    nelems = 100
+    nelems = 50
     length = 2.0
     dx = length/nelems
 
@@ -177,7 +188,7 @@ def frequencies(angular_rate, num_nodes, num_freqs, ref_speed=109.12):
     # Test transformation matrix
     # T = beam.getTransformationMatrix(0.1)
     # print T
-    # f = np.zeros([12])
+    # f = np.zeros([12])r
     # f[7] = 1
     # u = np.linalg.solve(K[6:,6:], f[6:])
     # print u
@@ -280,3 +291,8 @@ if __name__== "__main__":
     ref_speed    = 109.12
     omega = frequencies(angular_rate, num_nodes, num_freqs, ref_speed)
     print omega
+
+    # Why axial sign change worked -- integration by parts, perhaps?
+    # Why 3 noded elements failing -- division by integer? creation issue?
+    # sign convention for bending flap and leadlag
+    # Add the rotational components
