@@ -137,6 +137,9 @@ class TACSRigidBody : public TACSElement {
   // ----------------------------------------------------------------
   void setDesignVarNums(int _massDV, const int _cDV[], const int _JDV[]);
 
+  // Directly override the rigid-body mass (treat as uncertain parameter)
+  void setMass(TacsScalar _mass);
+
   // Set and retrieve design variable values
   // ---------------------------------------
   int getDesignVarNums(int elemIndex, int dvLen, int dvNums[]);

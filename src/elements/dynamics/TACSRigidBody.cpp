@@ -581,6 +581,11 @@ TACSRigidBody::TACSRigidBody(TACSRefFrame *_CRef, const TacsScalar _mass,
   updateInertialProperties();
 }
 
+void TACSRigidBody::setMass(TacsScalar _mass) {
+  mass = _mass;
+  // updateInertialProperties(); // optional if mass DV handles inertia externally
+}
+
 /*
   Decrease the reference counts to everything
 */
