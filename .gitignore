@@ -5,6 +5,8 @@ extern/
 *~
 *.in
 *.pyc
+.python_legacy/
+python_legacy/
 *.o
 *.so
 *.a

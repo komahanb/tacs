@@ -16,6 +16,9 @@ TACS_SUBDIRS = src \
 
 TACS_OBJS := $(addsuffix /*.o, ${TACS_SUBDIRS})
 
+LEGACY_CYTHON_VERSION ?= 0.29.36
+LEGACY_PYTHON_SITE ?= $(CURDIR)/python_legacy
+
 default:
 	@if [ "${TACS_IS_COMPLEX}" = "true" ]; then \
 	   echo "Building Complex TACS"; \
@@ -66,11 +69,15 @@ debug:
 		echo "dtype = np.double" >> tacs/TacsDefs.pxi; \
 	fi
 
-interface:
-	python setup.py build_ext --inplace
+.PHONY: legacy_cython
+legacy_cython:
+	@python tools/ensure_legacy_cython.py "$(LEGACY_PYTHON_SITE)" "$(LEGACY_CYTHON_VERSION)"
 
-complex_interface:
-	python setup.py build_ext --inplace --define TACS_USE_COMPLEX
+interface: legacy_cython
+	PYTHONPATH=$(LEGACY_PYTHON_SITE)$${PYTHONPATH:+:$$PYTHONPATH} python setup.py build_ext --inplace
+
+complex_interface: legacy_cython
+	PYTHONPATH=$(LEGACY_PYTHON_SITE)$${PYTHONPATH:+:$$PYTHONPATH} python setup.py build_ext --inplace --define TACS_USE_COMPLEX
 
 complex: TACS_IS_COMPLEX=true
 complex: default

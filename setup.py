@@ -1,6 +1,29 @@
 import os
 from subprocess import check_output
 import sys
+from pathlib import Path
+from distutils.version import LooseVersion
+
+LEGACY_CYTHON_VERSION = "0.29.36"
+LEGACY_SITE = Path(__file__).resolve().parent / "python_legacy"
+if LEGACY_SITE.exists():
+    sys.path.insert(0, str(LEGACY_SITE))
+
+try:
+    from Cython import __version__ as cython_version
+    from Cython.Build import cythonize
+except ImportError as exc:
+    raise RuntimeError(
+        "Cython is required to build the TACS Python interface. "
+        "Run `make legacy_cython` to install the supported legacy version."
+    ) from exc
+
+if LooseVersion(cython_version) >= LooseVersion("3.0"):
+    raise RuntimeError(
+        f"Cython {cython_version} is not supported on this branch. "
+        f"Run `make legacy_cython` (installs Cython=={LEGACY_CYTHON_VERSION}) "
+        "or install Cython<3 before building."
+    )
 
 # Numpy/mpi4py must be installed prior to installing TACS
 import numpy
@@ -9,7 +32,6 @@ import mpi4py
 # Import distutils
 from setuptools import setup
 from distutils.core import Extension as Ext
-from Cython.Build import cythonize
 
 # Convert from local to absolute directories
 def get_global_dir(files):
@@ -21,7 +43,10 @@ def get_global_dir(files):
 
 def get_mpi_flags():
     # Split the output from the mpicxx command
-    args = check_output(['mpicxx', '-show']).split()
+    raw = check_output(['mpicxx', '-show'])
+    if isinstance(raw, bytes):
+        raw = raw.decode()
+    args = raw.split()
 
     # Determine whether the output is an include/link/lib command
     inc_dirs, lib_dirs, libs = [], [], []
