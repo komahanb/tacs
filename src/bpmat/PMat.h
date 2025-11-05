@@ -77,6 +77,7 @@ class TACSPMat : public TACSMat {
   TACSVarMap *getRowMap(){ return rmap; }
   void getExtColMap( TACSBVecDistribute **ext_map ); // Access the column map  
   void printNzPattern( const char *fileName ); // Print the non-zero pattern
+  void dumpDenseToFile( const char *fileName, int rootRank ); // Dump dense matrix
 
   const char *TACSObjectName();
   MPI_Comm getMPIComm(){ return rmap->getMPIComm(); }

@@ -332,6 +332,22 @@ cdef class Mat:
         Zero the entries in the matrix
         '''
         self.ptr.zeroEntries()
+        return
+
+    def dumpDense(self, fname, root_rank=0):
+        '''
+        Dump the dense matrix entries to an ASCII .dat file
+        '''
+        cdef TACSPMat *p_ptr = _dynamicPMat(self.ptr)
+        cdef char *filename = NULL
+        cdef int root = root_rank
+
+        if p_ptr != NULL:
+            filename = convert_to_chars(fname)
+            p_ptr.dumpDenseToFile(filename, root)
+            return
+
+        raise TypeError("Dense dumping is only available for TACSPMat matrices")
 
     def mult(self, Vec x, Vec y):
         '''

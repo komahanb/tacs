@@ -184,7 +184,7 @@ cdef inline _init_VecInterp(TACSBVecInterp *ptr):
     
 cdef extern from "PMat.h":
     cdef cppclass TACSPMat(TACSMat):
-        pass
+        void dumpDenseToFile(const char*, int)
 
     cdef cppclass TACSAdditiveSchwarz(TACSPc):
         TACSAdditiveSchwarz(TACSPMat *mat, int levFill, double fill)
