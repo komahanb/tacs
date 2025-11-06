@@ -7,6 +7,9 @@
 include Makefile.in
 include TACS_Common.mk
 
+LEGACY_CYTHON_VERSION ?= 0.29.36
+LEGACY_PYTHON_SITE ?= $(CURDIR)/python_legacy
+
 TACS_SUBDIRS = src \
 	src/bpmat \
 	src/elements \
@@ -70,8 +73,19 @@ debug:
 interface:
 	${PYTHON} setup.py build_ext --inplace
 
+.PHONY: legacy_cython interface_legacy complex_interface_legacy
+
+legacy_cython:
+	${PYTHON} tools/ensure_legacy_cython.py "$(LEGACY_PYTHON_SITE)" "$(LEGACY_CYTHON_VERSION)"
+
+interface_legacy: legacy_cython
+	PYTHONPATH=$(LEGACY_PYTHON_SITE)$${PYTHONPATH:+:$$PYTHONPATH} ${PYTHON} setup.py build_ext --inplace
+
 complex_interface:
 	${PYTHON} setup.py build_ext --inplace --define TACS_USE_COMPLEX
+
+complex_interface_legacy: legacy_cython
+	PYTHONPATH=$(LEGACY_PYTHON_SITE)$${PYTHONPATH:+:$$PYTHONPATH} ${PYTHON} setup.py build_ext --inplace --define TACS_USE_COMPLEX
 
 complex: TACS_IS_COMPLEX=true
 complex: default
