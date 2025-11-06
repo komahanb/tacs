@@ -427,6 +427,24 @@ static int parse_element_field( size_t *loc,
 }
 
 /*
+  Converts the connectivity information loaded from a BDF file into
+  the coordinate ordering used by TACS for 9-node quadrilateral elements.
+*/
+static void convert_to_coordinate( int coord[9], const int orig[9] ){
+  coord[0] = orig[0];
+  coord[1] = orig[4];
+  coord[2] = orig[1];
+
+  coord[3] = orig[7];
+  coord[4] = orig[8];
+  coord[5] = orig[5];
+
+  coord[6] = orig[3];
+  coord[7] = orig[6];
+  coord[8] = orig[2];
+}
+
+/*
   The TACSMeshLoader class
 
   To load a mesh, you first pass in the communicator on which TACS
@@ -461,6 +479,9 @@ TACSMeshLoader::TACSMeshLoader( MPI_Comm _comm ){
 
   // Set the creator object to NULL
   creator = NULL;
+
+  // By default assume the BDF uses TACS coordinate ordering
+  convertToCoordinate = 0;
 }
 
 /*
@@ -513,6 +534,13 @@ void TACSMeshLoader::setElement( int component_num,
     _element->setComponentNum(component_num);
     elements[component_num] = _element;
   }
+}
+
+/*
+  Set whether to convert to coordinate ordering prior to creating elements
+*/
+void TACSMeshLoader::setConvertToCoordinate( int flag ){
+  convertToCoordinate = flag;
 }
 
 /*
@@ -891,6 +919,13 @@ int TACSMeshLoader::scanBDFFile( const char * file_name ){
             }
             else if (strncmp(line, "CQUAD9", 6) == 0 ||
                      strncmp(line, "CQUAD", 5) == 0){
+              if (convertToCoordinate){
+                int tmp[9];
+                for ( int k = 0; k < 9; k++ ){
+                  tmp[k] = temp_nodes[k];
+                }
+                convert_to_coordinate(temp_nodes, tmp);
+              }
               file_conn[elem_conn_size] = temp_nodes[0]-1;
               file_conn[elem_conn_size+1] = temp_nodes[4]-1;
               file_conn[elem_conn_size+2] = temp_nodes[1]-1;

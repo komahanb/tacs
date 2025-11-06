@@ -2464,6 +2464,13 @@ cdef class MeshLoader:
         """
         self.ptr.setElement(comp_num, elem.ptr)
 
+    def setConvertToCoordinate(self, int flag):
+        """
+        Control whether the loader converts gmsh-style CQUAD9 ordering
+        into the TACS coordinate convention before building the assembler.
+        """
+        self.ptr.setConvertToCoordinate(flag)
+
     def getNumNodes(self):
         return self.ptr.getNumNodes()
 
