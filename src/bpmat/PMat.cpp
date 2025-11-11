@@ -17,6 +17,7 @@
 */
 
 #include <stdio.h>
+#include <vector>
 #include "PMat.h"
 #include "FElibrary.h"
 #include "tacslapack.h"
@@ -357,6 +358,155 @@ void TACSPMat::printNzPattern( const char *fileName ){
     }
 
     fclose(fp);
+  }
+}
+
+/*!
+  Dump the dense matrix entries to a simple ASCII file.
+
+  The rows are written in global ordering so post-processing tools can
+  visualize the sparsity pattern easily.
+*/
+void TACSPMat::dumpDenseToFile( const char *fileName, int rootRank ){
+  MPI_Comm comm        = rmap->getMPIComm();
+  int      mpiRank     = 0;
+  int      mpiSize     = 0;
+  MPI_Comm_rank(comm, &mpiRank);
+  MPI_Comm_size(comm, &mpiSize);
+
+  const int *ownerRange = NULL;
+  rmap->getOwnerRange(&ownerRange);
+
+  int ownedNodes        = ownerRange[mpiRank + 1] - ownerRange[mpiRank];
+  int totalNodes        = ownerRange[mpiSize];
+  int localRows         = ownedNodes * bsize;
+  int totalRows         = totalNodes * bsize;
+  int totalCols         = totalRows;
+
+  std::vector<double> dense(static_cast<size_t>(localRows) * totalCols, 0.0);
+
+  int          blockSize  = 0;
+  int          numRows    = 0;
+  int          numCols    = 0;
+  const int   *rowp       = NULL;
+  const int   *cols       = NULL;
+  TacsScalar  *Avals      = NULL;
+  Aloc->getArrays(&blockSize, &numRows, &numCols, &rowp, &cols, &Avals);
+
+  int blockEntries = blockSize * blockSize;
+
+  for ( int row = 0; row < numRows; ++row ){
+    int globalNode      = ownerRange[mpiRank] + row;
+    int nodeRowOffset   = (globalNode - ownerRange[mpiRank]) * blockSize;
+
+    for ( int jp = rowp[row]; jp < rowp[row + 1]; ++jp ){
+      int globalColNode = ownerRange[mpiRank] + cols[jp];
+
+      for ( int bi = 0; bi < blockSize; ++bi ){
+        int denseRow = nodeRowOffset + bi;
+        double *rowData = dense.data() + static_cast<size_t>(denseRow) * totalCols;
+        int blockBase   = blockEntries * jp + bi * blockSize;
+
+        for ( int bj = 0; bj < blockSize; ++bj ){
+          rowData[globalColNode * blockSize + bj] =
+            TacsRealPart(Avals[blockBase + bj]);
+        }
+      }
+    }
+  }
+
+  int          browDim   = 0;
+  int          bcolDim   = 0;
+  const int   *browp     = NULL;
+  const int   *bcols     = NULL;
+  TacsScalar  *Bvals     = NULL;
+  Bext->getArrays(&blockSize, &browDim, &bcolDim, &browp, &bcols, &Bvals);
+
+  TACSBVecIndices *indices = ext_dist->getIndices();
+  const int *colVars       = NULL;
+  indices->getIndices(&colVars);
+
+  for ( int row = 0; row < browDim; ++row ){
+    int globalNode      = ownerRange[mpiRank] + Np + row;
+    int nodeRowOffset   = (globalNode - ownerRange[mpiRank]) * blockSize;
+
+    for ( int jp = browp[row]; jp < browp[row + 1]; ++jp ){
+      int globalColNode = colVars[bcols[jp]];
+
+      for ( int bi = 0; bi < blockSize; ++bi ){
+        int denseRow = nodeRowOffset + bi;
+        double *rowData = dense.data() + static_cast<size_t>(denseRow) * totalCols;
+        int blockBase   = blockEntries * jp + bi * blockSize;
+
+        for ( int bj = 0; bj < blockSize; ++bj ){
+          rowData[globalColNode * blockSize + bj] =
+            TacsRealPart(Bvals[blockBase + bj]);
+        }
+      }
+    }
+  }
+
+  auto writeRows = [this, totalCols]
+    ( FILE *fp, const std::vector<double> &rows, int blockCount ){
+      for ( int node = 0; node < blockCount; ++node ){
+        int base = node * bsize;
+
+        for ( int bi = 0; bi < bsize; ++bi ){
+          const double *rowData = rows.data() + static_cast<size_t>(base + bi) * totalCols;
+
+          for ( int col = 0; col < totalCols; ++col ){
+            fprintf(fp, "%.16e", rowData[col]);
+            if (col + 1 < totalCols){
+              fputc(' ', fp);
+            }
+          }
+
+          fputc('\n', fp);
+        }
+      }
+    };
+
+  if (mpiRank == rootRank){
+    FILE *fp = fopen(fileName, "w");
+
+    if (!fp){
+      fprintf(stderr, "TACSPMat::dumpDenseToFile: failed to open %s\n", fileName);
+      return;
+    }
+
+    fprintf(fp, "%d %d\n", totalRows, totalCols);
+    writeRows(fp, dense, ownedNodes);
+
+    for ( int proc = 0; proc < mpiSize; ++proc ){
+      if (proc == rootRank){
+        continue;
+      }
+
+      int procNodes = ownerRange[proc + 1] - ownerRange[proc];
+      int procRows  = procNodes * bsize;
+      std::vector<double> recv(static_cast<size_t>(procRows) * totalCols, 0.0);
+
+      MPI_Status status;
+      MPI_Recv(recv.data(),
+               procRows * totalCols,
+               MPI_DOUBLE,
+               proc,
+               1024,
+               comm,
+               &status);
+
+      writeRows(fp, recv, procNodes);
+    }
+
+    fclose(fp);
+  }
+  else {
+    MPI_Send(dense.data(),
+             localRows * totalCols,
+             MPI_DOUBLE,
+             rootRank,
+             1024,
+             comm);
   }
 }
 
