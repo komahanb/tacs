@@ -35,7 +35,7 @@ comm = MPI.COMM_WORLD
 #---------------------------------------------------------------------!
 
 for arg in sys.argv:
-    print arg
+    print (arg)
 
 bdfFileName = "plate.bdf" # Specify the name of the file to load which
                           # contains the mesh

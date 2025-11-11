@@ -58,7 +58,7 @@ bdfFileName = "plate.bdf" # Specify the name of the file to load which
 # Set the design variables
 #---------------------------------------------------------------------!
 
-x = np.array([0.01],dtype=np.complex)
+x = np.array([0.01],dtype=np.float64)
 
 #---------------------------------------------------------------------!
 # Configure F5 output
@@ -167,9 +167,9 @@ for bdf_order in [1,2,3]:
     bdf = TACS.BDFIntegrator(tacs, tinit, tfinal, num_steps_per_sec, bdf_order)
     bdf.setPrintLevel(0)
     bdf.setJacAssemblyFreq(1)
-    bdf.setFunction(funcs)
-    bdf.getFuncGrad(num_design_vars, x, fvals, dfdx)
-    bdf.getFDFuncGrad(num_design_vars, x, fvals_fd, dfdx_fd, dh)
+    bdf.setFunctions(funcs, len(x))
+    bdf.getGradient(dfdx)
+    #bdf.getFDFuncGrad(num_design_vars, x, fvals_fd, dfdx_fd, dh)
     
     fnum = 0
     for func in funcs:        
@@ -188,9 +188,9 @@ for order in [2,3,4]:
     dirk = TACS.DIRKIntegrator(tacs, tinit, tfinal, num_steps_per_sec, order)
     dirk.setPrintLevel(0)
     dirk.setJacAssemblyFreq(1)
-    dirk.setFunction(funcs)
-    dirk.getFuncGrad(num_design_vars, x, fvals, dfdx)
-    dirk.getFDFuncGrad(num_design_vars, x, fvals_fd, dfdx_fd, dh)
+    dirk.setFunctions(funcs, len(x))
+    dirk.getGradient(dfdx)
+    #dirk.getFDFuncGrad(num_design_vars, x, fvals_fd, dfdx_fd, dh)
     fnum = 0
     for func in funcs:        
         print_details("DIRK"+str(order), func.__class__.__name__, fnum,
@@ -207,9 +207,9 @@ for abm_order in [1, 2, 3, 4, 5, 6]:
     abm = TACS.ABMIntegrator(tacs, tinit, tfinal, num_steps_per_sec, abm_order)
     abm.setPrintLevel(0)
     abm.setJacAssemblyFreq(1)
-    abm.setFunction(funcs)
-    abm.getFuncGrad(num_design_vars, x, fvals, dfdx)
-    abm.getFDFuncGrad(num_design_vars, x, fvals_fd, dfdx_fd, dh)
+    abm.setFunctions(funcs, len(x))
+    abm.getGradient(dfdx)
+    #abm.getFDFuncGrad(num_design_vars, x, fvals_fd, dfdx_fd, dh)
     fnum = 0
     for func in funcs:        
         print_details("ABM" + str(abm_order), func.__class__.__name__, fnum,
@@ -225,9 +225,9 @@ for abm_order in [1, 2, 3, 4, 5, 6]:
 nbg = TACS.NBGIntegrator(tacs, tinit, tfinal, num_steps_per_sec, 2)
 nbg.setPrintLevel(0)
 nbg.setJacAssemblyFreq(1)
-nbg.setFunction(funcs)
-nbg.getFuncGrad(num_design_vars, x, fvals, dfdx)
-nbg.getFDFuncGrad(num_design_vars, x, fvals_fd, dfdx_fd, dh)
+nbg.setFunctions(funcs, len(x))
+nbg.getGradient(dfdx)
+#nbg.getFDFuncGrad(num_design_vars, x, fvals_fd, dfdx_fd, dh)
 fnum = 0
 for func in funcs:        
     print_details("NBG2", func.__class__.__name__, fnum,

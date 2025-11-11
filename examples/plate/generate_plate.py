@@ -3,7 +3,7 @@ import numpy as np
 
 nx = 3
 ny = 3
-nodes = np.arange(1, (2*nx+1)*(2*ny+1)+1, dtype=np.int).reshape(2*nx+1, 2*ny+1)
+nodes = np.arange(1, (2*nx+1)*(2*ny+1)+1, dtype=np.int64).reshape(2*nx+1, 2*ny+1)
 
 x = np.linspace(0, 1, 2*nx+1)
 y = np.linspace(0, 1, 2*ny+1)

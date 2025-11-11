@@ -71,13 +71,13 @@ debug:
 
 .PHONY: legacy_cython
 legacy_cython:
-	@python tools/ensure_legacy_cython.py "$(LEGACY_PYTHON_SITE)" "$(LEGACY_CYTHON_VERSION)"
+	@python3 tools/ensure_legacy_cython.py "$(LEGACY_PYTHON_SITE)" "$(LEGACY_CYTHON_VERSION)"
 
 interface: legacy_cython
-	PYTHONPATH=$(LEGACY_PYTHON_SITE)$${PYTHONPATH:+:$$PYTHONPATH} python setup.py build_ext --inplace
+	PYTHONPATH=$(LEGACY_PYTHON_SITE)$${PYTHONPATH:+:$$PYTHONPATH} python3 setup.py build_ext --inplace
 
 complex_interface: legacy_cython
-	PYTHONPATH=$(LEGACY_PYTHON_SITE)$${PYTHONPATH:+:$$PYTHONPATH} python setup.py build_ext --inplace --define TACS_USE_COMPLEX
+	PYTHONPATH=$(LEGACY_PYTHON_SITE)$${PYTHONPATH:+:$$PYTHONPATH} python3 setup.py build_ext --inplace --define TACS_USE_COMPLEX
 
 complex: TACS_IS_COMPLEX=true
 complex: default
